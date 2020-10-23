@@ -27,20 +27,33 @@ class MotionGateway:
         ip: str = None,
         key: str = None,
         token: str = None,
-        debug: int = 0,
     ):
         self._ip = ip
         self._key = key
         self._token = token
-        self._debug = debug
         
         self._access_token = None
         self._gateway_mac = None
         self._timeout = 5.0
 
         self._device_list = {}
+        self._device_type = None
+        self._status = None
+        self._N_devices = None
+        self._RSSI = None
+        self._protecol_version = None
         
         self._get_access_token()
+
+    def __repr__(self):
+        return "<MotionGateway ip: %s, mac: %s, protecol: %s, N_devices: %s, status: %s, RSSI: %s>" % (
+            self._ip,
+            self.mac,
+            self.protecol,
+            self.N_devices,
+            self.status,
+            self.RSSI,
+        )
 
     def _get_access_token(self):
         """Calculate the AccessToken from the Key and Token."""
@@ -49,7 +62,7 @@ class MotionGateway:
 
         cipher = AES.new(key_bytes, AES.MODE_ECB)
         encrypted_bytes = cipher.encrypt(token_bytes)
-        self._access_token = encrypted_bytes.hex()
+        self._access_token = encrypted_bytes.hex().upper()
         
         return self._access_token
 
@@ -96,21 +109,81 @@ class MotionGateway:
         """Get the device list from the Motion Gateway."""
         msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp}
 
-        self._send(msg)
+        response = self._send(msg)
+        
+        # check msgType
+        msgType = response.get("msgType")
+        if msgType != "GetDeviceListAck":
+            _LOGGER.error(
+                "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
+                msgType,
+            )
+            return
+        
+        # check device_type
+        device_type = response.get("deviceType")
+        if device_type != DEVICE_TYPE_GATEWAY:
+            _LOGGER.warning(
+                "DeviceType %s does not correspond to a gateway.",
+                device_type,
+            )
+        
+        # update variables
+        self._gateway_mac = response["mac"]
+        self._device_type = device_type
+        self._protecol_version = response["ProtocolVersion"]
+        self._token = response["token"]
         
         # add the discovered blinds to the device list.
+        for blind in response["data"]:
+            blind_type = blind["deviceType"]
+            if blind_type != DEVICE_TYPE_GATEWAY:
+                blind_mac = blind["mac"]
+                self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
+        
+        return self._device_list
 
     def Update(self, mac):
         """Get the status of the Motion Gateway."""
-        msg = {"msgType":"ReadDevice", "mac": self._gateway_mac, "deviceType": DEVICE_TYPE_GATEWAY, "msgID":self._get_timestamp}
+        msg = {"msgType":"ReadDevice", "mac": self._gateway_mac, "deviceType": self._device_type, "msgID":self._get_timestamp}
 
         self._send(msg)
+
+    @property
+    def status(self):
+        """Return gateway status: 'Working', 'Pairing' or 'Updating'."""
+        return self._status
+
+    @property
+    def N_devices(self):
+        """Return the number of connected child devices."""
+        return self._N_devices
+
+    @property
+    def RSSI(self):
+        """Return the Wi-Fi connection strength of the gateway."""
+        return self._RSSI
+
+    @property
+    def token(self):
+        """Return the Token."""
+        return self._token
 
     @property
     def access_token(self):
         """Return the AccessToken."""
         return self._access_token
-        
+
+    @property
+    def mac(self):
+        """Return the mac address of the gateway."""
+        return self._gateway_mac
+
+    @property
+    def protecol(self):
+        """Return the protecol version of the gateway."""
+        return self._protecol_version
+
     @property
     def device_list(self):
         """
@@ -127,20 +200,23 @@ class MotionBlind:
         gateway: MotionGateway = None,
         mac: str = None,
         device_type: str = None,
-        debug: int = 0,
     ):
         self._gateway = gateway
         self._mac = mac
-        self._debug = debug
         self._device_type = device_type
+
+    def __repr__(self):
+        return "<MotionBlind mac: %s>" % (
+            self.mac,
+        )
 
     def _write(self, data):
         """Write a command to control the blind."""
-        return self._gateway._write_subdevice(self._mac, self._device_type, data)
+        return self._gateway._write_subdevice(self.mac, self._device_type, data)
 
     def Update(self):
         """Get the status of the blind from the Motion Gateway."""
-        response = self._gateway._update_subdevice(self._mac, self._device_type)
+        response = self._gateway._update_subdevice(self.mac, self._device_type)
         print(response)
         
         data = {"operation": 5}
@@ -191,3 +267,8 @@ class MotionBlind:
 
         response = self._write(data)
         print(response)
+
+    @property
+    def mac(self):
+        """Return the mac address of the blind."""
+        return self._mac
