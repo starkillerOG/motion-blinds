@@ -10,13 +10,53 @@ import logging
 import socket
 import json
 import datetime
+from enum import IntEnum
 from Cryptodome.Cipher import AES
 
 _LOGGER = logging.getLogger(__name__)
 
-UDP_PORT = 32100
+UDP_PORT_SEND = 32100
+UPD_PORT_RECEIVE = 32101
 DEVICE_TYPE_BLIND = "10000000"
 DEVICE_TYPE_GATEWAY = "02000002"
+
+
+class BlindDeviceType(IntEnum):
+    """Device type matching of the blind using the values provided by the motion-gateway."""
+
+    RollerBlind = 1
+    VenetianBlind = 2
+    RomanBlind = 3
+    HoneycombBlind = 4
+    Shangri-LaBlind = 5
+    RollerShutter = 6
+    RollerGate = 7
+    Awning = 8
+    TopDownBottomUp = 9
+    DayNightBlind = 10
+    DimmingBlind = 11
+    Curtain = 12
+    CurtainLeft = 13
+    CurtainRight = 14
+
+
+class BlindStatus(IntEnum):
+    """Status of the blind."""
+
+    Closing = 0
+    Opening = 1
+    Stopped = 2
+    StatusQuery = 5
+
+
+class LimitStatus(IntEnum):
+    """Limit status of the blind."""
+
+    NoLimit = 0
+    TopLimit = 1
+    BottomLimit = 2
+    Limits = 3
+    Limit3 = 4
 
 
 class MotionGateway:
@@ -81,8 +121,8 @@ class MotionGateway:
 
         print("sending command")
 
-        s.sendto(json.dump(message), (self._ip, UDP_PORT))
-        #s.sendto(bytes(message, 'utf-8'), (self._ip, UDP_PORT))
+        s.sendto(json.dump(message), (self._ip, UDP_PORT_SEND))
+        #s.sendto(bytes(message, 'utf-8'), (self._ip, UDP_PORT_SEND))
 
         print("trying to receive")
 
@@ -204,10 +244,24 @@ class MotionBlind:
         self._gateway = gateway
         self._mac = mac
         self._device_type = device_type
+        
+        self._status = None
+        self._limit_status = None
+        self._position = None
+        self._angle = None
+        self._battery_level = None
+        self._RSSI = None
 
     def __repr__(self):
-        return "<MotionBlind mac: %s>" % (
+        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s, angle: %s, limit: %s, battery: %s, RSSI: %s>" % (
             self.mac,
+            self.device_type,
+            self.status,
+            self.position,
+            self.angle,
+            self.limit_status,
+            self.battery_level,
+            self.RSSI,
         )
 
     def _write(self, data):
@@ -269,6 +323,42 @@ class MotionBlind:
         print(response)
 
     @property
+    def device_type(self):
+        """Return the device type of the blind from BlindDeviceType enum."""
+        return self._device_type.name
+
+    @property
     def mac(self):
         """Return the mac address of the blind."""
         return self._mac
+
+    @property
+    def status(self):
+        """Return the current status of the blind from BlindStatus enum."""
+        return self._status.name
+
+    @property
+    def limit_status(self):
+        """Return the current status of the limit detection of the blind from LimitStatus enum."""
+        return self._limit_status.name
+
+    @property
+    def position(self):
+        """Return the current position of the blind in % (0-100)."""
+        return self._position
+
+    @property
+    def angle(self):
+        """Return the current angle of the blind 0-180."""
+        return self._angle
+
+    @property
+    def battery_level(self):
+        """Return the current battery level of the blind in % (0-100)."""
+        return self._battery_level
+
+    @property
+    def RSSI(self):
+        """Return the radio connection strength of the blind to the gateway."""
+        return self._RSSI
+
