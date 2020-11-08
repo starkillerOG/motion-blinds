@@ -3,7 +3,9 @@ Python library for interfacing with Motion Blinds
 
 This library allows you to control Motion Blinds from Coulisse B.V.
 This library is primarly writen to be used with HomeAssistant but can also be used stand alone.
+
 For products see https://motion-blinds.com or https://coulisse.com/products/motion.
+
 Shops that sell these blinds:
 - [Hornbach](https://www.hornbach.nl/)
 
@@ -20,8 +22,10 @@ or
 ## Retrieving Key
 The Motion Blinds API uses a 16 character key that can be retrieved from the official "Motion Blinds" app for [Ios](https://apps.apple.com/us/app/motion-blinds/id1437234324) or [Android](https://play.google.com/store/apps/details?id=com.coulisse.motion).
 Open the app, click the 3 dots in the top right corner, go to "settings", go to "Motion APP About", Please quickly tap this ‘Motion APP About’ page 5 times, a popup will apear that gives you the key.
-![alt text](https://raw.githubusercontent.com/starkillerOG/motion-blinds/master/pictures/Motion_App__get_key_1.jpg)
-![alt text](https://raw.githubusercontent.com/starkillerOG/motion-blinds/master/pictures/Motion_App__get_key_2.jpg)
+
+![alt text](https://raw.githubusercontent.com/starkillerOG/motion-blinds/main/pictures/Motion_App__get_key_1.jpg)
+![alt text](https://raw.githubusercontent.com/starkillerOG/motion-blinds/main/pictures/Motion_App__get_key_2.jpg)
+
 Please note that "-" characters need to be included in the key when providing it to this library.
 The key needs to be simular to "12ab345c-d67e-8f"
 
