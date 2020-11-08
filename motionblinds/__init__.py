@@ -8,7 +8,7 @@ Python library for interfacing with Motion Blinds.
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+logging.getLogger(__name__)
 
 __title__ = "motion-blinds"
 __version__ = "0.0.0"
