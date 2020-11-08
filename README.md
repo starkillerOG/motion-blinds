@@ -69,7 +69,7 @@ To open a blind the following example code can be used:
 >>> blind_1.Update()
 >>> blind_1.Open()
 ```
-Instead of blind_1.Open() you can also use blind_1.Close(), blind_1.Stop(), blind_1.Set_position(50), blind_1.Set_angle(90)
+Instead of blind_1.Open() you can also use blind_1.Close(), blind_1.Stop(), blind_1.Set_position(50) or blind_1.Set_angle(90)
 
 ## Gateway device
 A gateway device (that was asigned to variable 'm') has the following methods and properties:
@@ -80,6 +80,7 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 | "m.Update()"        | -         | -             | Get the status of the Motion Gateway and update the properties listed below        |
 
 | property         | value type | explanation                                         |
+| ---------------- | ---------- | --------------------------------------------------- |
 | "m.status"       | string     | Return gateway status: from GatewayStatus enum      |
 | "m.N_devices"    | int        | Return the number of connected child devices        |
 | "m.RSSI"         | int        | Return the Wi-Fi connection strength of the gateway in dBm |
@@ -103,6 +104,7 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.Set_angle(90)"    | angle     | int (0-180)   | Set the angle/rotation of the blind                 |
 
 | property                | value type | explanation                                                                         |
+| ----------------------- | ---------- | ----------------------------------------------------------------------------------- |
 | "blind_1.blind_type"    | string     | Return the type of the blind from BlindType enum                                    |
 | "blind_1.mac"           | string     | Return the mac address of the blind                                                 |
 | "blind_1.status"        | string     | Return the current status of the blind from BlindStatus enum                        |
