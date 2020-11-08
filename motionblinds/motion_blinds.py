@@ -205,7 +205,7 @@ class MotionGateway:
 
     def Update(self):
         """Get the status of the Motion Gateway."""
-        msg = {"msgType":"ReadDevice", "mac": self._gateway_mac, "deviceType": self._device_type, "msgID":self._get_timestamp()}
+        msg = {"msgType":"ReadDevice", "mac": self.mac, "deviceType": self.device_type, "msgID":self._get_timestamp()}
 
         response = self._send(msg)
         
@@ -274,7 +274,20 @@ class MotionGateway:
     @property
     def mac(self):
         """Return the mac address of the gateway."""
+        if self._gateway_mac is None:
+            _LOGGER.error("gateway mac not yet retrieved, use GetDeviceList to obtain it before using the mac.")
+            return None
+        
         return self._gateway_mac
+
+    @property
+    def device_type(self):
+        """Return the device type of the gateway."""
+        if self._device_type is None:
+            _LOGGER.error("gateway device_type not yet retrieved, use GetDeviceList to obtain it before using the device_type.")
+            return None
+
+        return self._device_type
 
     @property
     def protecol(self):

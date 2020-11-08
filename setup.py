@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 """Python library for interfacing with Motion Blinds."""
+import pathlib
 from setuptools import find_packages, setup
+
+# The directory containing this file
+HERE = pathlib.Path(__file__).parent
+
+# The text of the README file
+README = (HERE / "README.md").read_text()
 
 setup(name='motionblinds',
       version='0.0.0',
       description='Python library for interfacing with Motion Blinds',
-      long_description='Python library for interfacing with Motion Blinds',
+      long_description=README,
+      long_description_content_type="text/markdown",
       url='https://github.com/starkillerOG/motion-blinds',
       author='starkillerOG',
       author_email='starkiller.og@gmail.com',
