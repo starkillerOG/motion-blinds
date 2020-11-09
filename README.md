@@ -107,13 +107,15 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.Set_position(50)" | postion   | int (0-100)   | Set the position of the blind                       |
 | "blind_1.Set_angle(90)"    | angle     | int (0-180)   | Set the angle/rotation of the blind                 |
 
-| property                | value type | explanation                                                                         |
-| ----------------------- | ---------- | ----------------------------------------------------------------------------------- |
-| "blind_1.blind_type"    | string     | Return the type of the blind from BlindType enum                                    |
-| "blind_1.mac"           | string     | Return the mac address of the blind                                                 |
-| "blind_1.status"        | string     | Return the current status of the blind from BlindStatus enum                        |
-| "blind_1.limit_status"  | string     | Return the current status of the limit detection of the blind from LimitStatus enum |
-| "blind_1.position"      | int        | Return the current position of the blind in % (0-100)                               |
-| "blind_1.angle"         | int        | Return the current angle of the blind 0-180                                         |
-| "blind_1.battery_level" | int        | Return the current battery level of the blind                                       |
-| "blind_1.RSSI"          | int        | Return the radio connection strength of the blind to the gateway in dBm             |
+| property                  | value type | explanation                                                                         |
+| ------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| "blind_1.blind_type"      | string     | Return the type of the blind from BlindType enum                                    |
+| "blind_1.type"            | enum       | Return the type of the blind as a BlindType enum                                    |
+| "blind_1.mac"             | string     | Return the mac address of the blind                                                 |
+| "blind_1.status"          | string     | Return the current status of the blind from BlindStatus enum                        |
+| "blind_1.limit_status"    | string     | Return the current status of the limit detection of the blind from LimitStatus enum |
+| "blind_1.position"        | int        | Return the current position of the blind in % (0-100)                               |
+| "blind_1.angle"           | int        | Return the current angle of the blind 0-180                                         |
+| "blind_1.battery_voltage" | double     | Return the current battery voltage of the blind in V                                |
+| "blind_1.battery_level"   | double     | Return the current battery level of the blind in %                                  |
+| "blind_1.RSSI"            | int        | Return the radio connection strength of the blind to the gateway in dBm             |

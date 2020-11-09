@@ -31,6 +31,7 @@ class GatewayStatus(IntEnum):
 class BlindType(IntEnum):
     """Blind type matching of the blind using the values provided by the motion-gateway."""
 
+    Unknown = -1
     RollerBlind = 1
     VenetianBlind = 2
     RomanBlind = 3
@@ -193,12 +194,13 @@ class MotionGateway:
         for blind in response["data"]:
             blind_type = blind["deviceType"]
             if blind_type != DEVICE_TYPE_GATEWAY:
+                blind_mac = blind["mac"]
                 if blind_type != DEVICE_TYPE_BLIND:
                     _LOGGER.warning(
-                        "DeviceType %s does not correspond to a gateway or a blind.",
+                        "Device with mac '%s' has DeviceType '%s' that does not correspond to a gateway or a blind.",
+                        blind_mac,
                         blind_type,
                     )
-                blind_mac = blind["mac"]
                 self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
         
         return self._device_list
@@ -320,11 +322,12 @@ class MotionBlind:
         self._limit_status = None
         self._position = None
         self._angle = None
+        self._battery_voltage = None
         self._battery_level = None
         self._RSSI = None
 
     def __repr__(self):
-        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s, RSSI: %s dBm>" % (
+        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm>" % (
             self.mac,
             self.blind_type,
             self.status,
@@ -332,6 +335,7 @@ class MotionBlind:
             self.angle,
             self.limit_status,
             self.battery_level,
+            self.battery_voltage,
             self.RSSI,
         )
 
@@ -357,20 +361,38 @@ class MotionBlind:
         device_type = response.get("deviceType")
         if device_type != DEVICE_TYPE_BLIND:
             _LOGGER.warning(
-                "DeviceType %s does not correspond to a blind in Update function.",
+                "Device with mac '%s' has DeviceType '%s' that does not correspond to a blind in Update function.",
+                self.mac,
                 device_type,
             )
         
         # update variables
         self._mac = response["mac"]
         self._device_type = response["deviceType"]
-        self._blind_type = BlindType(response["data"]["type"])
+        try:
+            self._blind_type = BlindType(response["data"]["type"])
+        except ValueError:
+            if self._blind_type != BlindType.Unknown:
+                _LOGGER.error(
+                    "Device with mac '%s' has blind_type '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                    self.mac,
+                    response["data"]["type"],
+                )
+            self._blind_type = BlindType.Unknown
         self._status = BlindStatus(response["data"]["operation"])
         self._limit_status = LimitStatus(response["data"]["currentState"])
         self._position = response["data"]["currentPosition"]
         self._angle = response["data"]["currentAngle"]
-        self._battery_level = response["data"]["batteryLevel"]
+        self._battery_voltage = response["data"]["batteryLevel"]/100.0
         self._RSSI = response["data"]["RSSI"]
+        
+        # calculate values
+        if self._battery_voltage > 9.5:
+            # 12V battery pack
+            self._battery_level = round((self._battery_voltage-10.0)*100/(12.6-10.0), 2)
+        else:
+            # 9V battery pack
+            self._battery_level = round((self._battery_voltage-8.0)*100/(9.5-8.0), 2)
 
     def Update(self):
         """Get the status of the blind from the Motion Gateway."""
@@ -447,6 +469,11 @@ class MotionBlind:
         return self._blind_type
 
     @property
+    def type(self):
+        """Return the type of the blind as a BlindType enum."""
+        return self._blind_type
+
+    @property
     def mac(self):
         """Return the mac address of the blind."""
         return self._mac
@@ -478,8 +505,13 @@ class MotionBlind:
         return self._angle
 
     @property
+    def battery_voltage(self):
+        """Return the current battery voltage of the blind in V."""
+        return self._battery_voltage
+
+    @property
     def battery_level(self):
-        """Return the current battery level of the blind."""
+        """Return the current battery level of the blind in %."""
         return self._battery_level
 
     @property
