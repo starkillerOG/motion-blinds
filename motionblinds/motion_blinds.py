@@ -16,8 +16,10 @@ from Cryptodome.Cipher import AES
 _LOGGER = logging.getLogger(__name__)
 
 UDP_PORT_SEND = 32100
-DEVICE_TYPE_BLIND = "10000000"
-DEVICE_TYPE_GATEWAY = "02000002"
+DEVICE_TYPE_GATEWAY = "02000002" # Gateway
+DEVICE_TYPE_BLIND = "10000000"   # Standard Blind
+DEVICE_TYPE_TDBU = "10000001"    # Top Down Bottom Up
+DEVICE_TYPE_DR = "10000002"      # Double Roller
 
 
 class GatewayStatus(IntEnum):
@@ -46,6 +48,8 @@ class BlindType(IntEnum):
     Curtain = 12
     CurtainLeft = 13
     CurtainRight = 14
+    DoubleRoller = 17
+    Switch = 43
 
 
 class BlindStatus(IntEnum):
@@ -195,14 +199,17 @@ class MotionGateway:
             blind_type = blind["deviceType"]
             if blind_type != DEVICE_TYPE_GATEWAY:
                 blind_mac = blind["mac"]
-                if blind_type != DEVICE_TYPE_BLIND:
+                if blind_type in [DEVICE_TYPE_BLIND, DEVICE_TYPE_DR]:
+                    self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
+                elif blind_type in [DEVICE_TYPE_TDBU]:
+                    self._device_list[blind_mac] = MotionTopDownBottomUp(gateway = self, mac = blind_mac, device_type = blind_type)
+                else:
                     _LOGGER.warning(
-                        "Device with mac '%s' has DeviceType '%s' that does not correspond to a gateway or a blind.",
+                        "Device with mac '%s' has DeviceType '%s' that does not correspond to a gateway or known blind.",
                         blind_mac,
                         blind_type,
                     )
-                self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
-        
+
         return self._device_list
 
     def Update(self):
@@ -354,14 +361,22 @@ class MotionBlind:
 
         return response
 
-    def _parse_response(self, response):
-        """Parse a response form the blind."""
+    def _calculate_battery_level(self, voltage):
+        if voltage > 9.5:
+            # 12V battery pack
+            return round((voltage-10.0)*100/(12.6-10.0), 2)
+
+        # 9V battery pack
+        return round((voltage-8.0)*100/(9.5-8.0), 2)
+
+    def _parse_response_common(self, response):
+        """Parse the common part of a response form the blind."""
 
         # check device_type
         device_type = response.get("deviceType")
-        if device_type != DEVICE_TYPE_BLIND:
+        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR]:
             _LOGGER.warning(
-                "Device with mac '%s' has DeviceType '%s' that does not correspond to a blind in Update function.",
+                "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
                 self.mac,
                 device_type,
             )
@@ -379,20 +394,23 @@ class MotionBlind:
                     response["data"]["type"],
                 )
             self._blind_type = BlindType.Unknown
+
+        self._RSSI = response["data"]["RSSI"]
+
+    def _parse_response(self, response):
+        """Parse a response form the blind."""
+        
+        # handle the part that is common among all blinds
+        self._parse_response_common(response)
+        
+        # handle specific properties
         self._status = BlindStatus(response["data"]["operation"])
         self._limit_status = LimitStatus(response["data"]["currentState"])
         self._position = response["data"]["currentPosition"]
         self._angle = response["data"]["currentAngle"]
         self._battery_voltage = response["data"]["batteryLevel"]/100.0
-        self._RSSI = response["data"]["RSSI"]
-        
-        # calculate values
-        if self._battery_voltage > 9.5:
-            # 12V battery pack
-            self._battery_level = round((self._battery_voltage-10.0)*100/(12.6-10.0), 2)
-        else:
-            # 9V battery pack
-            self._battery_level = round((self._battery_voltage-8.0)*100/(9.5-8.0), 2)
+
+        self._battery_level = self._calculate_battery_level(self._battery_voltage)
 
     def Update(self):
         """Get the status of the blind from the Motion Gateway."""
@@ -461,6 +479,15 @@ class MotionBlind:
         self._parse_response(response)
 
     @property
+    def device_type(self):
+        """Return the device type of the blind."""
+        if self._device_type is None:
+            _LOGGER.error("blind device_type not yet retrieved, use Update to obtain it before using the device_type.")
+            return None
+
+        return self._device_type
+
+    @property
     def blind_type(self):
         """Return the type of the blind from BlindType enum."""
         if self._blind_type is not None:
@@ -518,4 +545,117 @@ class MotionBlind:
     def RSSI(self):
         """Return the radio connection strength of the blind to the gateway in dBm."""
         return self._RSSI
+
+class MotionTopDownBottomUp(MotionBlind):
+    """Sub class representing a Top Down Bottom Up blind connected to the Motion Gateway."""
+    def _parse_response(self, response):
+        """Parse a response form the blind."""
+        
+        # handle the part that is common among all blinds
+        self._parse_response_common(response)
+        
+        # handle specific properties
+        self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"]))
+        self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
+        self._position = {"T": response["data"]["currentPosition_T"], "B": response["data"]["currentPosition_B"]}
+        self._angle = None
+        self._battery_voltage = {"T": response["data"]["batteryLevel_T"]/100.0, "B": response["data"]["batteryLevel_B"]/100.0}
+
+        self._battery_level = {"T": self._calculate_battery_level(self._battery_voltage["T"]), "B": self._calculate_battery_level(self._battery_voltage["B"])}
+
+    def Stop(self, motor: str = "B"):
+        """Stop the motion of the blind."""
+        if motor == "B":
+            data = {"operation_B": 2}
+        elif motor == "T":
+            data = {"operation_T": 2}
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            return
+
+        response = self._write(data)
+        
+        self._parse_response(response)
+
+    def Open(self, motor: str = "B"):
+        """Open the blind/move the blind up."""
+        if motor == "B":
+            data = {"operation_B": 1}
+        elif motor == "T":
+            data = {"operation_T": 1}
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            return
+
+        response = self._write(data)
+        
+        self._parse_response(response)
+
+    def Close(self, motor: str = "B"):
+        """Close the blind/move the blind down."""
+        if motor == "B":
+            data = {"operation_B": 0}
+        elif motor == "T":
+            data = {"operation_T": 0}
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            return
+
+        response = self._write(data)
+        
+        self._parse_response(response)
+
+    def Set_position(self, position, motor: str = "B"):
+        """
+        Set the position of the blind.
+        
+        position is in %, so 0-100
+        0 = open
+        100 = closed
+        """
+        if motor == "B":
+            data = {"targetPosition_B": position}
+        elif motor == "T":
+            data = {"targetPosition_T": position}
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            return
+
+        response = self._write(data)
+        
+        self._parse_response(response)
+
+    def Set_angle(self, angle, motor: str = "B"):
+        """
+        Set the angle/rotation of the blind.
+        
+        angle is in degrees, so 0-180
+        """
+        if motor == "B":
+            data = {"targetAngle_B": angle}
+        elif motor == "T":
+            data = {"targetAngle_T": angle}
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            return
+
+        response = self._write(data)
+        
+        self._parse_response(response)
+
+    @property
+    def status(self):
+        """Return the current status of the blind from BlindStatus enum."""
+        if self._status is not None:
+            return {"T": self._status["T"].name, "B": self._status["B"].name}
+
+        return self._status
+
+    @property
+    def limit_status(self):
+        """Return the current status of the limit detection of the blind from LimitStatus enum."""
+        if self._limit_status is not None:
+            return {"T": self._limit_status["T"].name, "B": self._limit_status["B"].name}
+
+        return self._limit_status
 
