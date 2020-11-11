@@ -370,7 +370,7 @@ class MotionBlind:
             # 3 cel battery pack (12.6V)
             return round((voltage-10.4)*100/(12.6-10.4), 2)
 
-        if voltage > 0.0 and voltage <= 9.5:
+        if voltage > 0.0 and voltage <= 9.4:
             # 2 cel battery pack (8.4V)
             return round((voltage-6.2)*100/(8.4-6.2), 2)
 
@@ -401,6 +401,10 @@ class MotionBlind:
                     response["data"]["type"],
                 )
             self._blind_type = BlindType.Unknown
+
+        # Check max angle
+        if self._blind_type in [BlindType.ShangriLaBlind]:
+            self._max_angle = 90
 
         self._RSSI = response["data"]["RSSI"]
 
