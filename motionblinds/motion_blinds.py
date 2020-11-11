@@ -199,8 +199,10 @@ class MotionGateway:
             blind_type = blind["deviceType"]
             if blind_type != DEVICE_TYPE_GATEWAY:
                 blind_mac = blind["mac"]
-                if blind_type in [DEVICE_TYPE_BLIND, DEVICE_TYPE_DR]:
+                if blind_type in [DEVICE_TYPE_BLIND]:
                     self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
+                elif blind_type in [DEVICE_TYPE_DR]:
+                    self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type, max_angle = 90)
                 elif blind_type in [DEVICE_TYPE_TDBU]:
                     self._device_list[blind_mac] = MotionTopDownBottomUp(gateway = self, mac = blind_mac, device_type = blind_type)
                 else:
@@ -319,11 +321,13 @@ class MotionBlind:
         gateway: MotionGateway = None,
         mac: str = None,
         device_type: str = None,
+        max_angle: int = 180,
     ):
         self._gateway = gateway
         self._mac = mac
         self._device_type = device_type
         self._blind_type = None
+        self._max_angle = max_angle
         
         self._status = None
         self._limit_status = None
@@ -410,7 +414,7 @@ class MotionBlind:
         self._status = BlindStatus(response["data"]["operation"])
         self._limit_status = LimitStatus(response["data"]["currentState"])
         self._position = response["data"]["currentPosition"]
-        self._angle = response["data"]["currentAngle"]
+        self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
         self._battery_voltage = response["data"]["batteryLevel"]/100.0
 
         self._battery_level = self._calculate_battery_level(self._battery_voltage)
@@ -475,7 +479,9 @@ class MotionBlind:
         
         angle is in degrees, so 0-180
         """
-        data = {"targetAngle": angle}
+        target_angle = round(angle*self._max_angle/180.0, 0)
+        
+        data = {"targetAngle": target_angle}
 
         response = self._write(data)
         
@@ -634,10 +640,12 @@ class MotionTopDownBottomUp(MotionBlind):
         
         angle is in degrees, so 0-180
         """
+        target_angle = round(angle*self._max_angle/180.0, 0)
+
         if motor == "B":
-            data = {"targetAngle_B": angle}
+            data = {"targetAngle_B": target_angle}
         elif motor == "T":
-            data = {"targetAngle_T": angle}
+            data = {"targetAngle_T": target_angle}
         else:
             _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
             return
