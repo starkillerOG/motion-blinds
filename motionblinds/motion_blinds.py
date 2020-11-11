@@ -366,8 +366,11 @@ class MotionBlind:
             # 12V battery pack
             return round((voltage-10.0)*100/(12.6-10.0), 2)
 
-        # 9V battery pack
-        return round((voltage-8.0)*100/(9.5-8.0), 2)
+        if voltage > 0.0 and voltage <= 9.5:
+            # 9V battery pack
+            return round((voltage-8.0)*100/(9.5-8.0), 2)
+
+        return 0.0
 
     def _parse_response_common(self, response):
         """Parse the common part of a response form the blind."""
