@@ -366,13 +366,13 @@ class MotionBlind:
         return response
 
     def _calculate_battery_level(self, voltage):
-        if voltage > 9.5:
-            # 12V battery pack
-            return round((voltage-10.0)*100/(12.6-10.0), 2)
+        if voltage > 9.4:
+            # 3 cel battery pack (12.6V)
+            return round((voltage-10.4)*100/(12.6-10.4), 2)
 
         if voltage > 0.0 and voltage <= 9.5:
-            # 9V battery pack
-            return round((voltage-8.0)*100/(9.5-8.0), 2)
+            # 2 cel battery pack (8.4V)
+            return round((voltage-6.2)*100/(8.4-6.2), 2)
 
         return 0.0
 
