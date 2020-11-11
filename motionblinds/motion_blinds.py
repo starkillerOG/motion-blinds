@@ -555,7 +555,7 @@ class MotionTopDownBottomUp(MotionBlind):
         self._parse_response_common(response)
         
         # handle specific properties
-        self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"]))
+        self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"])}
         self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
         self._position = {"T": response["data"]["currentPosition_T"], "B": response["data"]["currentPosition_B"]}
         self._angle = None
