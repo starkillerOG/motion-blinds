@@ -92,14 +92,14 @@ class MotionGateway:
         self._status = None
         self._N_devices = None
         self._RSSI = None
-        self._protecol_version = None
+        self._protocol_version = None
         
         
     def __repr__(self):
-        return "<MotionGateway ip: %s, mac: %s, protecol: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
+        return "<MotionGateway ip: %s, mac: %s, protocol: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
             self._ip,
             self.mac,
-            self.protecol,
+            self.protocol,
             self.N_devices,
             self.status,
             self.RSSI,
@@ -188,7 +188,7 @@ class MotionGateway:
         # update variables
         self._gateway_mac = response["mac"]
         self._device_type = device_type
-        self._protecol_version = response["ProtocolVersion"]
+        self._protocol_version = response["ProtocolVersion"]
         self._token = response["token"]
         
         # calculate the acces token
@@ -301,9 +301,9 @@ class MotionGateway:
         return self._device_type
 
     @property
-    def protecol(self):
-        """Return the protecol version of the gateway."""
-        return self._protecol_version
+    def protocol(self):
+        """Return the protocol version of the gateway."""
+        return self._protocol_version
 
     @property
     def device_list(self):

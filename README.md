@@ -56,7 +56,7 @@ Some example code that will print the information of the gateway and all conecte
 {'abcdefghujkl0001': <MotionBlind mac: abcdefghujkl0001, type: None, status: None, position: None %, angle: None, limit: None, battery: None, RSSI: None dBm>}
 >>> m.Update()
 >>> print(m)
-<MotionGateway ip: 192.168.1.100, mac: abcdefghujkl, protecol: 0.9, N_devices: 1, status: Working, RSSI: -71 dBm>
+<MotionGateway ip: 192.168.1.100, mac: abcdefghujkl, protocol: 0.9, N_devices: 1, status: Working, RSSI: -71 dBm>
 >>> for blind in m.device_list.values():
 >>>     blind.Update()
 >>>     print(blind)
@@ -92,7 +92,7 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 | "m.access_token" | string     | Return the AccessToken |
 | "m.mac"          | string     | Return the mac address of the gateway |
 | "m.device_type"  | string     | Return the device type of the gateway |
-| "m.protecol"     | string     | Return the protecol version of the gateway |
+| "m.protocol"     | string     | Return the protocol version of the gateway |
 | "m.device_list"  | dict       | Return a dict containing all blinds connected to the gateway, The keys in the dict are the mac adresses of the blinds. |
 
 ## Blind device
