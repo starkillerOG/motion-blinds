@@ -55,6 +55,7 @@ class BlindType(IntEnum):
 class BlindStatus(IntEnum):
     """Status of the blind."""
 
+    Unknown = -1
     Closing = 0
     Opening = 1
     Stopped = 2
@@ -64,6 +65,7 @@ class BlindStatus(IntEnum):
 class LimitStatus(IntEnum):
     """Limit status of the blind."""
 
+    Unknown = -1
     NoLimit = 0
     TopLimit = 1
     BottomLimit = 2
@@ -366,13 +368,17 @@ class MotionBlind:
         return response
 
     def _calculate_battery_level(self, voltage):
-        if voltage > 9.4:
-            # 3 cel battery pack (12.6V)
-            return round((voltage-10.4)*100/(12.6-10.4), 2)
-
         if voltage > 0.0 and voltage <= 9.4:
             # 2 cel battery pack (8.4V)
             return round((voltage-6.2)*100/(8.4-6.2), 2)
+
+        if voltage > 9.4 and voltage <= 13.6:
+            # 3 cel battery pack (12.6V)
+            return round((voltage-10.4)*100/(12.6-10.4), 2)
+
+        if voltage > 13.6:
+            # 4 cel battery pack (16.8V)
+            return round((voltage-14.6)*100/(16.8-14.6), 2)
 
         return 0.0
 
@@ -415,8 +421,26 @@ class MotionBlind:
         self._parse_response_common(response)
         
         # handle specific properties
-        self._status = BlindStatus(response["data"]["operation"])
-        self._limit_status = LimitStatus(response["data"]["currentState"])
+        try:
+            self._status = BlindStatus(response["data"]["operation"])
+        except ValueError:
+            if self._status != BlindStatus.Unknown:
+                _LOGGER.error(
+                    "Device with mac '%s' has status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                    self.mac,
+                    response["data"]["operation"],
+                )
+            self._status = BlindStatus.Unknown
+        try:
+            self._limit_status = LimitStatus(response["data"]["currentState"])
+        except ValueError:
+            if self._limit_status != LimitStatus.Unknown:
+                _LOGGER.error(
+                    "Device with mac '%s' has limit_status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                    self.mac,
+                    response["data"]["currentState"],
+                )
+            self._status = LimitStatus.Unknown
         self._position = response["data"]["currentPosition"]
         self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
         self._battery_voltage = response["data"]["batteryLevel"]/100.0
