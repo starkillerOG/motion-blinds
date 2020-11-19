@@ -80,6 +80,7 @@ class MotionGateway:
         self,
         ip: str = None,
         key: str = None,
+        timeout: float = 3.0,
     ):
         self._ip = ip
         self._key = key
@@ -87,7 +88,7 @@ class MotionGateway:
         
         self._access_token = None
         self._gateway_mac = None
-        self._timeout = 5.0
+        self._timeout = timeout
 
         self._device_list = {}
         self._device_type = None
@@ -134,13 +135,26 @@ class MotionGateway:
 
     def _send(self, message):
         """Send a command to the Motion Gateway."""
+        attempt = 1
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.settimeout(self._timeout)
+                
+                s.sendto(bytes(json.dumps(message), 'utf-8'), (self._ip, UDP_PORT_SEND))
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(self._timeout)
-
-        s.sendto(bytes(json.dumps(message), 'utf-8'), (self._ip, UDP_PORT_SEND))
-
-        data, addr = s.recvfrom(1024)
+                data, addr = s.recvfrom(1024)
+                
+                s.close()
+                break
+            except socket.timeout:
+                if attempt >= 3:
+                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while sending message '%s'", self._timeout, attempt, message)
+                    s.close()
+                    raise
+                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...", self._timeout, attempt, message)
+                s.close()
+                attempt += 1
         
         response = json.loads(data)
         
@@ -218,6 +232,10 @@ class MotionGateway:
 
     def Update(self):
         """Get the status of the Motion Gateway."""
+        if self._gateway_mac is None or self._device_type is None:
+            _LOGGER.debug("gateway mac or device_type not yet retrieved, first executing GetDeviceList to obtain it before continuing with Update.")
+            self.GetDeviceList()
+        
         msg = {"msgType":"ReadDevice", "mac": self.mac, "deviceType": self.device_type, "msgID":self._get_timestamp()}
 
         response = self._send(msg)
