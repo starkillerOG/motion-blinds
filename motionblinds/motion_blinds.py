@@ -669,13 +669,13 @@ class MotionTopDownBottomUp(MotionBlind):
         100 = closed
         """
         if motor == "B":
-            if position <= self._position["T"]:
+            if position >= self._position["T"]:
                 data = {"targetPosition_B": position}
             else:
                 _LOGGER.error('Error setting position, the bottom of the TDBU blind can not go above the top of the TDBU blind')
                 return
         elif motor == "T":
-            if position >= self._position["B"]: 
+            if position <= self._position["B"]: 
                 data = {"targetPosition_T": position}
             else:
                 _LOGGER.error('Error setting position, the top of the TDBU blind can not go below the bottom of the TDBU blind')
