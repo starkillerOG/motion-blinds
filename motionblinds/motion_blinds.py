@@ -603,6 +603,20 @@ class MotionBlind:
 
 class MotionTopDownBottomUp(MotionBlind):
     """Sub class representing a Top Down Bottom Up blind connected to the Motion Gateway."""
+    def __repr__(self):
+        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s %%, %s V, RSSI: %s dBm>" % (
+            self.mac,
+            self.blind_type,
+            self.status,
+            self.position,
+            self.scaled_position,
+            self.width,
+            self.limit_status,
+            self.battery_level,
+            self.battery_voltage,
+            self.RSSI,
+        )
+
     def _parse_response(self, response):
         """Parse a response form the blind."""
         
@@ -612,7 +626,10 @@ class MotionTopDownBottomUp(MotionBlind):
         # handle specific properties
         self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"])}
         self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
-        self._position = {"T": response["data"]["currentPosition_T"], "B": response["data"]["currentPosition_B"]}
+        pos_T = response["data"]["currentPosition_T"]
+        pos_B = response["data"]["currentPosition_B"]
+        pos_C = (pos_T + pos_B)/2.0
+        self._position = {"T": pos_T, "B": pos_B, "C": pos_C}
         self._angle = None
         self._battery_voltage = {"T": response["data"]["batteryLevel_T"]/100.0, "B": response["data"]["batteryLevel_B"]/100.0}
 
@@ -624,8 +641,10 @@ class MotionTopDownBottomUp(MotionBlind):
             data = {"operation_B": 2}
         elif motor == "T":
             data = {"operation_T": 2}
+        elif motor == "C":
+            data = {"operation_B": 2, "operation_T": 2}
         else:
-            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            _LOGGER.error('Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)')
             return
 
         response = self._write(data)
@@ -638,8 +657,10 @@ class MotionTopDownBottomUp(MotionBlind):
             data = {"operation_B": 1}
         elif motor == "T":
             data = {"operation_T": 1}
+        elif motor == "C":
+            data = {"operation_B": 1, "operation_T": 1}
         else:
-            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            _LOGGER.error('Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)')
             return
 
         response = self._write(data)
@@ -652,8 +673,10 @@ class MotionTopDownBottomUp(MotionBlind):
             data = {"operation_B": 0}
         elif motor == "T":
             data = {"operation_T": 0}
+        elif motor == "C":
+            data = {"operation_B": 1, "operation_T": 0}
         else:
-            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            _LOGGER.error('Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)')
             return
 
         response = self._write(data)
@@ -680,13 +703,44 @@ class MotionTopDownBottomUp(MotionBlind):
             else:
                 _LOGGER.error('Error setting position, the top of the TDBU blind can not go below the bottom of the TDBU blind')
                 return
+        elif motor == "C":
+            if position >= self.width/2.0 and position <= (100 - self.width/2.0): 
+                data = {"targetPosition_T": position-self.width/2.0, "targetPosition_B": position+self.width/2.0}
+            else:
+                _LOGGER.error('Error setting position, the combined TDBU blind cannot reach position %.1f, because including the width of %.1f, it would exceed its limits', position, width)
+                return
         else:
-            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            _LOGGER.error('Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)')
             return
 
         response = self._write(data)
         
         self._parse_response(response)
+
+    def Set_scaled_position(self, scaled_position, motor: str = "B"):
+        """
+        Set the scaled position of the blind.
+        
+        scaled_position is in %, so 0-100
+        for top blind:
+            0 = open
+            100 = at position of bottom blind
+        for bottom blind:
+            0 = at position of the top blind
+            100 = closed
+        """
+        if motor == "B":
+            pos_bottom = self._position["T"] + (100.0 - self._position["T"])*scaled_position/100.0
+            return self.Set_position(pos_bottom, motor)
+        elif motor == "T":
+            pos_top = scaled_position*self._position["B"]/100.0
+            return self.Set_position(pos_top, motor)
+        elif motor == "C":
+            pos_combined = self.width/2.0 + scaled_position*(100.0 - self.width)/100.0
+            return self.Set_position(pos_combined, motor)
+        else:
+            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (bottom)')
+            return
 
     def Set_angle(self, angle, motor: str = "B"):
         """
@@ -700,13 +754,45 @@ class MotionTopDownBottomUp(MotionBlind):
             data = {"targetAngle_B": target_angle}
         elif motor == "T":
             data = {"targetAngle_T": target_angle}
+        elif motor == "C":
+            data = {"targetAngle_B": target_angle, "targetAngle_T": target_angle}
         else:
-            _LOGGER.error('Please specify which motor to control "T" (top) or "B" (botom)')
+            _LOGGER.error('Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)')
             return
 
         response = self._write(data)
         
         self._parse_response(response)
+
+    @property
+    def scaled_position(self):
+        """
+        Return the current scaled position of the blind in % (0-100).
+
+        For the Top this is the position from the top to the bottom blind
+        For the Bottom this is the postion from the top blind to the bottom
+        """
+        if self._position["B"] > 0:
+            pos_top = self._position["T"]*100.0/self._position["B"]
+        else:
+            pos_top = 0
+
+        if self._position["T"] < 100:
+            pos_bottom = (self._position["B"] - self._position["T"])*100.0/(100.0 - self._position["T"])
+        else:
+            pos_bottom = 100
+
+        if self.width < 100:
+            pos_combined = (self._position["C"] - self.width/2.0)*100.0/(100.0 - self.width)
+        else:
+            pos_combined = 100
+
+        return {"T": pos_top, "B": pos_bottom, "C": pos_combined}
+
+    @property
+    def width(self):
+        """Return the current width of the closed surface in % (0-100)."""
+        return self._position["B"] - self._position["T"]
 
     @property
     def status(self):

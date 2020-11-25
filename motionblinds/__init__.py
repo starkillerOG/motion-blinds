@@ -11,7 +11,7 @@ import logging
 logging.getLogger(__name__)
 
 __title__ = "motion-blinds"
-__version__ = "0.1.7"
+__version__ = "0.2.0"
 
 # Import motion_blinds module
 from .motion_blinds import MotionGateway

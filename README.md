@@ -123,27 +123,31 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 
 ## Top Down Bottom Up (TDBU) device
 A TDBU blind device has two motors designated by "T" = Top and "B" = Bottom to control the two parts of the blind.
+Both parts can be controlled together using "C" = Combined as the motor.
 The TDBU device (that was asigned to variable 'blind_1') has the following methods and properties:
 
-| method                                  | arguments      | argument type           | explanation                                                    |
-| --------------------------------------- | -------------- | ----------------------- | -------------------------------------------------------------- |
-| "blind_1.Update()"                      | -              | -                       | Get the status of the blind from the Motion Gateway            |
-| "blind_1.Stop(motor = 'B')"             | motor          | 'B' or 'T'              | Stop the motion of Bottom or Top motor of the blind            |
-| "blind_1.Open(motor = 'B')"             | motor          | 'B' or 'T'              | Move the Bottom or Top motor of the blind up                   |
-| "blind_1.Close(motor = 'B')"            | motor          | 'B' or 'T'              | Move the Bottom or Top motor of the blind down                 |
-| "blind_1.Set_position(50, motor = 'B')" | postion, motor | int (0-100), 'B' or 'T' | Set the position of the Bottom or Top motor of the blind       |
-| "blind_1.Set_angle(90, motor = 'B')"    | angle, motor   | int (0-180), 'B' or 'T' | Set the angle/rotation of the Bottom or Top motor of the blind |
+| method                                         | arguments       | argument type                | explanation                                                                             |
+| ---------------------------------------------- | --------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
+| "blind_1.Update()"                             | -               | -                            | Get the status of the blind from the Motion Gateway                                     |
+| "blind_1.Stop(motor = 'B')"                    | motor           | 'B', 'T' or 'C'              | Stop the motion of Bottom or Top motor of the blind                                     |
+| "blind_1.Open(motor = 'B')"                    | motor           | 'B', 'T' or 'C'              | Move the Bottom or Top motor of the blind up                                            |
+| "blind_1.Close(motor = 'B')"                   | motor           | 'B', 'T' or 'C'              | Move the Bottom or Top motor of the blind down                                          |
+| "blind_1.Set_position(50, motor = 'B')"        | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the Bottom or Top motor of the blind                                |
+| "blind_1.Set_scaled_position(50, motor = 'B')" | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the motor of the blind within the alowed space in which it can move |
+| "blind_1.Set_angle(90, motor = 'B')"           | angle, motor    | int (0-180), 'B', 'T' or 'C' | Set the angle/rotation of the Bottom or Top motor of the blind                          |
 
-| property                  | value type                 | explanation                                                                         |
-| ------------------------- | -------------------------- | ----------------------------------------------------------------------------------- |
-| "blind_1.device_type"     | string                     | Return the device type which is a 8 character number                                |
-| "blind_1.blind_type"      | string                     | Return the type of the blind from BlindType enum                                    |
-| "blind_1.type"            | enum                       | Return the type of the blind as a BlindType enum                                    |
-| "blind_1.mac"             | string                     | Return the mac address of the blind                                                 |
-| "blind_1.status"          | {"T": string, "B": string} | Return the current status of the blind from BlindStatus enum                        |
-| "blind_1.limit_status"    | {"T": string, "B": string} | Return the current status of the limit detection of the blind from LimitStatus enum |
-| "blind_1.position"        | {"T": int, "B": int}       | Return the current position of the blind in % (0-100)                               |
-| "blind_1.angle"           | {"T": int, "B": int}       | Return the current angle of the blind 0-180                                         |
-| "blind_1.battery_voltage" | {"T": double, "B": double} | Return the current battery voltage of the blind in V                                |
-| "blind_1.battery_level"   | {"T": double, "B": double} | Return the current battery level of the blind in %                                  |
-| "blind_1.RSSI"            | int                        | Return the radio connection strength of the blind to the gateway in dBm             |
+| property                  | value type                              | explanation                                                                                             |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| "blind_1.device_type"     | string                                  | Return the device type which is a 8 character number                                                    |
+| "blind_1.blind_type"      | string                                  | Return the type of the blind from BlindType enum                                                        |
+| "blind_1.type"            | enum                                    | Return the type of the blind as a BlindType enum                                                        |
+| "blind_1.mac"             | string                                  | Return the mac address of the blind                                                                     |
+| "blind_1.status"          | {"T": string, "B": string}              | Return the current status of the blind from BlindStatus enum                                            |
+| "blind_1.limit_status"    | {"T": string, "B": string}              | Return the current status of the limit detection of the blind from LimitStatus enum                     |
+| "blind_1.position"        | {"T": int, "B": int, "C": double}       | Return the current position of the blind in % (0-100)                                                   |
+| "blind_1.scaled_position" | {"T": double, "B": double, "C": double} | Return the current position of the blind, scaled to the alowed space in which it can move, in % (0-100) |
+| "blind_1.width"           | int                                     | Return the area that is covered by the blind in % (0-100)                                               |
+| "blind_1.angle"           | {"T": int, "B": int}                    | Return the current angle of the blind 0-180                                                             |
+| "blind_1.battery_voltage" | {"T": double, "B": double}              | Return the current battery voltage of the blind in V                                                    |
+| "blind_1.battery_level"   | {"T": double, "B": double}              | Return the current battery level of the blind in %                                                      |
+| "blind_1.RSSI"            | int                                     | Return the radio connection strength of the blind to the gateway in dBm                                 |
