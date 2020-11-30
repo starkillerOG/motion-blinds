@@ -37,6 +37,7 @@ from motionblinds import MotionGateway
 m = MotionGateway(ip = "192.168.1.100", key = "12ab345c-d67e-8f")
 ```
 This library is not polling. Thus you need to populate the connected blinds using the GetDeviceList method and update device information using the Update method.
+Note that multicast pushes from the gateway can be processed to retrieve instant status updates (see Multicast pushes section)
 ```
 m.GetDeviceList()
 m.Update()
@@ -75,13 +76,50 @@ To open a blind the following example code can be used:
 ```
 Instead of blind_1.Open() you can also use blind_1.Close(), blind_1.Stop(), blind_1.Set_position(50) or blind_1.Set_angle(90)
 
+## Multicast pushes
+This library allows to listen for multicast pushes from the gateway in a parallel thread and process these pushes to get instant updates of the gateway and connected blinds status.
+To use this parallel pushes processing a MotionMulticast class object needs to be initilized.
+The MotionMulticast.Start_listen() and MotionMulticast.Stop_listen() can then be used to start and stop the parallel thread that is listening for incoming pushes.
+The MotionMulticast class object can be supplied to the MotionGateway class to let it update that gateway and its connected blinds.
+Externall callbacks can be registered for both gateway devices and blind devices (see tables below)
+An example code to listen for pushes for 30 seconds and print out gateway or blind information when a push comes in (when a blind finishes moving):
+```
+import time
+from motionblinds import MotionMulticast, MotionGateway
+
+def callback_func_gateway():
+    print(m)
+
+def callback_func_blind():
+    for blind in m.device_list.values():
+        print(blind)
+
+motion_multicast = MotionMulticast()
+motion_multicast.Start_listen()
+
+m = MotionGateway(ip="192.168.1.100", key="12ab345c-d67e-8f", multicast = motion_multicast)
+m.GetDeviceList()
+m.Update()
+
+m.Register_callback("1", callback_func_gateway)
+for blind in m.device_list.values():
+    blind.Register_callback("1", callback_func_blind)
+
+time.sleep(30)
+
+motion_multicast.Stop_listen()
+```
+
 ## Gateway device
 A gateway device (that was asigned to variable 'm') has the following methods and properties:
 
-| method              | arguments | argument type | explanation                                                                        |
-| ------------------- | --------- | ------------- | ---------------------------------------------------------------------------------- |
-| "m.GetDeviceList()" | -         | -             | Get the device list from the Motion Gateway and update the properties listed below |
-| "m.Update()"        | -         | -             | Get the status of the Motion Gateway and update the properties listed below        |
+| method                          | arguments    | argument type    | explanation                                                                        |
+| ------------------------------- | ------------ | ---------------- | ---------------------------------------------------------------------------------- |
+| "m.GetDeviceList()"             | -            | -                | Get the device list from the Motion Gateway and update the properties listed below |
+| "m.Update()"                    | -            | -                | Get the status of the Motion Gateway and update the properties listed below        |
+| "m.Register_callback("1", func) | id, callback | string, function | Register a external callback function for updates of the gateway                   |
+| "m.Remove_callback("1")         | id           | string           | Remove a external callback using its id                                            |
+| "m.Clear_callbacks()            | -            | -                | Remove all external registered callbacks for updates of the gateway                |
 
 | property         | value type | explanation                                         |
 | ---------------- | ---------- | --------------------------------------------------- |
@@ -98,14 +136,17 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 ## Blind device
 A blind device (that was asigned to variable 'blind_1') has the following methods and properties:
 
-| method                     | arguments | argument type | explanation                                         |
-| -------------------------- | --------- | ------------- | --------------------------------------------------- |
-| "blind_1.Update()"         | -         | -             | Get the status of the blind from the Motion Gateway |
-| "blind_1.Stop()"           | -         | -             | Stop the motion of the blind                        |
-| "blind_1.Open()"           | -         | -             | Open the blind/move the blind up                    |
-| "blind_1.Close()"          | -         | -             | Close the blind/move the blind down                 |
-| "blind_1.Set_position(50)" | postion   | int (0-100)   | Set the position of the blind                       |
-| "blind_1.Set_angle(90)"    | angle     | int (0-180)   | Set the angle/rotation of the blind                 |
+| method                                | arguments    | argument type    | explanation                                                       |
+| ------------------------------------- | ------------ | ---------------- | ----------------------------------------------------------------- |
+| "blind_1.Update()"                    | -            | -                | Get the status of the blind from the Motion Gateway               |
+| "blind_1.Stop()"                      | -            | -                | Stop the motion of the blind                                      |
+| "blind_1.Open()"                      | -            | -                | Open the blind/move the blind up                                  |
+| "blind_1.Close()"                     | -            | -                | Close the blind/move the blind down                               |
+| "blind_1.Set_position(50)"            | postion      | int (0-100)      | Set the position of the blind                                     |
+| "blind_1.Set_angle(90)"               | angle        | int (0-180)      | Set the angle/rotation of the blind                               |
+| "blind_1.Register_callback("1", func) | id, callback | string, function | Register a external callback function for updates of the blind    |
+| "blind_1.Remove_callback("1")         | id           | string           | Remove a external callback using its id                           |
+| "blind_1.Clear_callbacks()            | -            | -                | Remove all external registered callbacks for updates of the blind |
 
 | property                  | value type | explanation                                                                         |
 | ------------------------- | ---------- | ----------------------------------------------------------------------------------- |
@@ -135,6 +176,9 @@ The TDBU device (that was asigned to variable 'blind_1') has the following metho
 | "blind_1.Set_position(50, motor = 'B')"        | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the Bottom or Top motor of the blind                                |
 | "blind_1.Set_scaled_position(50, motor = 'B')" | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the motor of the blind within the alowed space in which it can move |
 | "blind_1.Set_angle(90, motor = 'B')"           | angle, motor    | int (0-180), 'B', 'T' or 'C' | Set the angle/rotation of the Bottom or Top motor of the blind                          |
+| "blind_1.Register_callback("1", func)          | id, callback    | string, function             | Register a external callback function for updates of the blind                          |
+| "blind_1.Remove_callback("1")                  | id              | string                       | Remove a external callback using its id                                                 |
+| "blind_1.Clear_callbacks()                     | -               | -                            | Remove all external registered callbacks for updates of the blind                       |
 
 | property                  | value type                              | explanation                                                                                             |
 | ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |

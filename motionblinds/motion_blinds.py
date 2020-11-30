@@ -9,13 +9,20 @@ This module implements the interface to Motion Blinds.
 import logging
 import socket
 import json
+import struct
 import datetime
+import platform
 from enum import IntEnum
 from Cryptodome.Cipher import AES
+from threading import Thread
 
 _LOGGER = logging.getLogger(__name__)
 
+MULTICAST_ADDRESS = '238.0.0.18'
 UDP_PORT_SEND = 32100
+UDP_PORT_RECEIVE = 32101
+SOCKET_BUFSIZE = 1024
+
 DEVICE_TYPE_GATEWAY = "02000002" # Gateway
 DEVICE_TYPE_BLIND = "10000000"   # Standard Blind
 DEVICE_TYPE_TDBU = "10000001"    # Top Down Bottom Up
@@ -73,6 +80,118 @@ class LimitStatus(IntEnum):
     Limit3 = 4
 
 
+class MotionMulticast:
+    """Multicast UDP communication class for a MotionGateway."""
+
+    def __init__(self, interface='any'):
+        self._listening = False
+        self._mcastsocket = None
+        self._thread = None
+        self._interface = interface
+
+        self._registered_callbacks = {}
+
+    def _create_mcast_socket(self, interface):
+        """Create and bind a socket for communication."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        if interface != 'any':
+            if platform.system() != "Windows":
+                try:
+                    sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
+                except OSError:
+                    sock.bind((interface, UDP_PORT_RECEIVE))
+            else:
+                sock.bind((interface, UDP_PORT_RECEIVE))
+
+            mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
+        else:
+            if platform.system() != "Windows":
+                try:
+                    sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
+                except OSError:
+                    sock.bind(('', UDP_PORT_RECEIVE))
+            else:
+                sock.bind(('', UDP_PORT_RECEIVE))
+            mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        return sock
+
+    def _listen_to_msg(self):
+        """Listen loop for UDP multicast messages for the Motion Gateway."""
+        while self._listening:
+            if self._mcastsocket is None:
+                continue
+            try:
+                data, (ip_add, _) = self._mcastsocket.recvfrom(SOCKET_BUFSIZE)
+            except socket.timeout:
+                continue
+            try:
+                message = json.loads(data)
+
+                if ip_add not in self._registered_callbacks:
+                    _LOGGER.info('Unknown motion gateway ip %s', ip_add)
+                    continue
+
+                if message.get("actionResult") is not None:
+                    _LOGGER.error("Received actionResult: '%s', on multicast listener from ip '%s'",
+                        message.get("actionResult"),
+                        ip_add,
+                    )
+
+                callback = self._registered_callbacks[ip_add]
+                callback(message)
+
+            except Exception as err:
+                _LOGGER.error("Cannot process multicast message: '%s'\n%s", data, err)
+                continue
+
+        _LOGGER.info('Listener stopped')
+
+    def Register_motion_gateway(self, ip, callback):
+        """Register a Motion Gateway to this Multicast listener."""
+        if ip in self._registered_callbacks:
+            _LOGGER.error("A callback for ip '%s' was already registed, overwriting previous callback", ip)
+        self._registered_callbacks[ip] = callback
+
+    def Start_listen(self):
+        """Start listening."""
+        if self._listening:
+            _LOGGER.error('Multicast listener already started, not starting another one.')
+            return
+
+        self._listening = True
+
+        if self._mcastsocket is None:
+            _LOGGER.info('Creating multicast socket')
+            self._mcastsocket = self._create_mcast_socket(self._interface)
+            self._mcastsocket.settimeout(5.0)  # ensure you can exit the _listen_to_msg loop
+        else:
+            _LOGGER.error('Multicast socket was already created.')
+
+        if self._thread is None:
+            self._thread = Thread(target=self._listen_to_msg, args=())
+            self._thread.daemon = True
+            self._thread.start()
+        else:
+            _LOGGER.error('Multicast thread was already created.')
+            self._thread.daemon = True
+            self._thread.start()
+
+    def Stop_listen(self):
+        """Stop listening."""
+        self._listening = False
+        self._thread.join()
+        self._thread = None
+        _LOGGER.info('Multicast thread stopped')
+
+        if self._mcastsocket is not None:
+            self._mcastsocket.close()
+            self._mcastsocket = None
+
+
 class MotionGateway:
     """Main class representing the Motion Gateway."""
 
@@ -81,14 +200,18 @@ class MotionGateway:
         ip: str = None,
         key: str = None,
         timeout: float = 3.0,
+        multicast: MotionMulticast = None,
     ):
         self._ip = ip
         self._key = key
         self._token = None
-        
+
         self._access_token = None
         self._gateway_mac = None
         self._timeout = timeout
+
+        self._multicast = multicast
+        self._registered_callbacks = {}
 
         self._device_list = {}
         self._device_type = None
@@ -96,8 +219,11 @@ class MotionGateway:
         self._N_devices = None
         self._RSSI = None
         self._protocol_version = None
-        
-        
+
+        if self._multicast is not None:
+            self._multicast.Register_motion_gateway(ip, self._multicast_callback)
+
+
     def __repr__(self):
         return "<MotionGateway ip: %s, mac: %s, protocol: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
             self._ip,
@@ -143,7 +269,7 @@ class MotionGateway:
                 
                 s.sendto(bytes(json.dumps(message), 'utf-8'), (self._ip, UDP_PORT_SEND))
 
-                data, addr = s.recvfrom(1024)
+                data, addr = s.recvfrom(SOCKET_BUFSIZE)
                 
                 s.close()
                 break
@@ -178,21 +304,27 @@ class MotionGateway:
 
         return self._send(msg)
 
-    def GetDeviceList(self):
-        """Get the device list from the Motion Gateway."""
-        msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp()}
+    def _parse_update_response(self, response):
+        """Parse the response to a update of the gateway"""
 
-        response = self._send(msg)
-        
-        # check msgType
-        msgType = response.get("msgType")
-        if msgType != "GetDeviceListAck":
-            _LOGGER.error(
-                "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
-                msgType,
+        # check device_type
+        device_type = response.get("deviceType")
+        if device_type != DEVICE_TYPE_GATEWAY:
+            _LOGGER.warning(
+                "DeviceType %s does not correspond to a gateway in parse update function.",
+                device_type,
             )
-            return
         
+        # update variables
+        self._gateway_mac = response["mac"]
+        self._device_type = device_type
+        self._status = GatewayStatus(response["data"]["currentState"])
+        self._N_devices = response["data"]["numberOfDevices"]
+        self._RSSI = response["data"]["RSSI"]
+
+    def _parse_device_list_response(self, response):
+        """Parse the response to a device list update of the gateway"""
+
         # check device_type
         device_type = response.get("deviceType")
         if device_type != DEVICE_TYPE_GATEWAY:
@@ -228,6 +360,52 @@ class MotionGateway:
                         blind_type,
                     )
 
+    def _multicast_callback(self, message):
+        """Process a multicast push message to update data."""
+        msgType = message.get("msgType")
+        if msgType == "Report":
+            mac = message.get("mac")
+            if mac not in self.device_list:
+                _LOGGER.warning("Multicast push with mac '%s' not in device_list, message: '%s'", mac, message)
+                return
+            self.device_list[mac]._multicast_callback(message)
+        elif msgType == "Heartbeat":
+            mac = message.get("mac")
+            if mac != self._gateway_mac:
+                _LOGGER.warning("Multicast Heartbeat with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, message)
+                return
+            self._parse_update_response(message)
+            for callback in self._registered_callbacks.values():
+                callback()
+        elif msgType == "GetDeviceListAck":
+            if mac != self._gateway_mac:
+                _LOGGER.warning("Multicast GetDeviceListAck with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, message)
+                return
+            self._parse_device_list_response(message)
+            for callback in self._registered_callbacks.values():
+                callback()
+        else:
+            _LOGGER.warning("Unknown msgType '%s' received from multicast push with message: '%s'", msgType, message)
+            return
+
+    def GetDeviceList(self):
+        """Get the device list from the Motion Gateway."""
+        msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp()}
+
+        response = self._send(msg)
+        
+        # check msgType
+        msgType = response.get("msgType")
+        if msgType != "GetDeviceListAck":
+            _LOGGER.error(
+                "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
+                msgType,
+            )
+            return
+        
+        # parse response
+        self._parse_device_list_response(response)
+
         return self._device_list
 
     def Update(self):
@@ -248,21 +426,23 @@ class MotionGateway:
                 msgType,
             )
             return
-        
-        # check device_type
-        device_type = response.get("deviceType")
-        if device_type != DEVICE_TYPE_GATEWAY:
-            _LOGGER.warning(
-                "DeviceType %s does not correspond to a gateway in Update function.",
-                device_type,
-            )
-        
-        # update variables
-        self._gateway_mac = response["mac"]
-        self._device_type = device_type
-        self._status = GatewayStatus(response["data"]["currentState"])
-        self._N_devices = response["data"]["numberOfDevices"]
-        self._RSSI = response["data"]["RSSI"]
+
+        # parse response
+        self._parse_update_response(response)
+
+    def Register_callback(self, id, callback):
+        """Register a external callback function for updates of the gateway."""
+        if id in self._registered_callbacks:
+            _LOGGER.error("A callback with id '%s' was already registed, overwriting previous callback", id)
+        self._registered_callbacks[id] = callback
+
+    def Remove_callback(self, id):
+        """Remove a external callback using its id."""
+        self._registered_callbacks.pop(id)
+
+    def Clear_callbacks(self):
+        """Remove all external registered callbacks for updates of the gateway."""
+        self._registered_callbacks.clear()
 
     @property
     def status(self):
@@ -348,6 +528,8 @@ class MotionBlind:
         self._device_type = device_type
         self._blind_type = None
         self._max_angle = max_angle
+        
+        self._registered_callbacks = {}
         
         self._status = None
         self._limit_status = None
@@ -465,6 +647,12 @@ class MotionBlind:
 
         self._battery_level = self._calculate_battery_level(self._battery_voltage)
 
+    def _multicast_callback(self, message):
+        """Process a multicast push message to update data."""
+        self._parse_response(message)
+        for callback in self._registered_callbacks.values():
+            callback()
+
     def Update(self):
         """Get the status of the blind from the Motion Gateway."""
         response = self._gateway._read_subdevice(self.mac, self._device_type)
@@ -532,6 +720,20 @@ class MotionBlind:
         response = self._write(data)
         
         self._parse_response(response)
+
+    def Register_callback(self, id, callback):
+        """Register a external callback function for updates of this blind."""
+        if id in self._registered_callbacks:
+            _LOGGER.error("A callback with id '%s' was already registed, overwriting previous callback", id)
+        self._registered_callbacks[id] = callback
+
+    def Remove_callback(self, id):
+        """Remove a external callback using its id."""
+        self._registered_callbacks.pop(id)
+
+    def Clear_callbacks(self):
+        """Remove all external registered callbacks for updates of this blind."""
+        self._registered_callbacks.clear()
 
     @property
     def device_type(self):
