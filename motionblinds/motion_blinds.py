@@ -79,8 +79,112 @@ class LimitStatus(IntEnum):
     Limits = 3
     Limit3 = 4
 
+class MotionCommunication:
+    """Communication class for Motion Gateways."""
 
-class MotionMulticast:
+    def _get_timestamp(self):
+        """Get the current time and format according to required Message-ID (Timestamp)."""
+        time = datetime.datetime.utcnow()
+        time_str = time.strftime("%Y%d%m%H%M%S%f")[:-3]
+        
+        return time_str
+
+    def _create_mcast_socket(self, interface):
+            """Create and bind a socket for communication."""
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            if interface != 'any':
+                if platform.system() != "Windows":
+                    try:
+                        sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
+                    except OSError:
+                        sock.bind((interface, UDP_PORT_RECEIVE))
+                else:
+                    sock.bind((interface, UDP_PORT_RECEIVE))
+
+                mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
+            else:
+                if platform.system() != "Windows":
+                    try:
+                        sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
+                    except OSError:
+                        sock.bind(('', UDP_PORT_RECEIVE))
+                else:
+                    sock.bind(('', UDP_PORT_RECEIVE))
+                mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+            return sock
+
+
+class MotionDiscovery(MotionCommunication):
+    """Multicast UDP discovery of Motion Gateways."""
+
+    def __init__(self, interface='any', discovery_time=10.0):
+        self._mcastsocket = None
+        self._interface = interface
+        self._discovery_time = discovery_time
+        
+        self._discovered_devices = {}
+
+    def discover(self):
+        self._mcastsocket = self._create_mcast_socket(self._interface)
+        self._mcastsocket.settimeout(self._discovery_time)
+        
+        msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp()}
+        
+        self._mcastsocket.sendto(bytes(json.dumps(msg), 'utf-8'), (MULTICAST_ADDRESS, UDP_PORT_SEND))
+        
+        start_time = datetime.datetime.utcnow()
+        while True:
+            time_delta = datetime.datetime.utcnow() - start_time
+            
+            if time_delta.seconds > self._discovery_time:
+                break
+
+            try:
+                data, (ip, _) = self._mcastsocket.recvfrom(SOCKET_BUFSIZE)
+                response = json.loads(data)
+                
+                # check msgType
+                msgType = response.get("msgType")
+                if msgType != "GetDeviceListAck":
+                    if msgType != "Heartbeat":
+                        _LOGGER.error(
+                            "Response from discovery is not a GetDeviceListAck but '%s'.",
+                            msgType,
+                        )
+                    continue
+                
+                # check device_type
+                device_type = response.get("deviceType")
+                if device_type != DEVICE_TYPE_GATEWAY:
+                    _LOGGER.error(
+                        "DeviceType %s does not correspond to a gateway from a discovery response.",
+                        device_type,
+                    )
+                    continue
+                
+                # add to discovered devices
+                self._discovered_devices[ip] = response
+            except socket.timeout:
+                break
+        
+        self._mcastsocket.close()
+        
+        if self._discovered_devices == {}:
+            _LOGGER.warning("No Motion gateways discovered after %.1f seconds.", self._discovery_time)
+        
+        return self._discovered_devices
+
+    @property
+    def discovered_devices(self):
+        """Return the discovered devices."""
+        return self._discovered_devices
+
+
+class MotionMulticast(MotionCommunication):
     """Multicast UDP communication class for a MotionGateway."""
 
     def __init__(self, interface='any'):
@@ -90,34 +194,6 @@ class MotionMulticast:
         self._interface = interface
 
         self._registered_callbacks = {}
-
-    def _create_mcast_socket(self, interface):
-        """Create and bind a socket for communication."""
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        if interface != 'any':
-            if platform.system() != "Windows":
-                try:
-                    sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
-                except OSError:
-                    sock.bind((interface, UDP_PORT_RECEIVE))
-            else:
-                sock.bind((interface, UDP_PORT_RECEIVE))
-
-            mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
-        else:
-            if platform.system() != "Windows":
-                try:
-                    sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
-                except OSError:
-                    sock.bind(('', UDP_PORT_RECEIVE))
-            else:
-                sock.bind(('', UDP_PORT_RECEIVE))
-            mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
-
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-        return sock
 
     def _listen_to_msg(self):
         """Listen loop for UDP multicast messages for the Motion Gateway."""
@@ -192,7 +268,7 @@ class MotionMulticast:
             self._mcastsocket = None
 
 
-class MotionGateway:
+class MotionGateway(MotionCommunication):
     """Main class representing the Motion Gateway."""
 
     def __init__(
@@ -251,13 +327,6 @@ class MotionGateway:
         self._access_token = encrypted_bytes.hex().upper()
         
         return self._access_token
-
-    def _get_timestamp(self):
-        """Get the current time and format according to required Message-ID (Timestamp)."""
-        time = datetime.datetime.utcnow()
-        time_str = time.strftime("%Y%d%m%H%M%S%f")[:-3]
-        
-        return time_str
 
     def _send(self, message):
         """Send a command to the Motion Gateway."""

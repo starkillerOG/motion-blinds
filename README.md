@@ -110,6 +110,30 @@ time.sleep(30)
 motion_multicast.Stop_listen()
 ```
 
+## Discovery
+Motion Gateways can be discovered on your network using the MotionDiscovery class.
+The following example will try to discover gateways for 10 seconds and then print a dict containg the gateways and their connected blinds that were discovered.
+
+```
+>>> from motionblinds import MotionDiscovery
+>>> d = MotionDiscovery()
+>>> motion_gateways = d.discover()
+>>> print(motion_gateways)
+
+{'192.168.1.100': {
+    'msgType': 'GetDeviceListAck',
+    'mac': 'abcdefghujkl',
+    'deviceType': '02000002',
+    'ProtocolVersion': '0.9',
+    'token': '12345A678B9CDEFG',
+    'data': [
+        {'mac': 'abcdefghujkl',     'deviceType': '02000002'},
+        {'mac': 'abcdefghujkl0001', 'deviceType': '10000000'},
+        {'mac': 'abcdefghujkl0002', 'deviceType': '10000000'}
+    ]
+}}
+```
+
 ## Gateway device
 A gateway device (that was asigned to variable 'm') has the following methods and properties:
 
