@@ -954,7 +954,7 @@ class MotionTopDownBottomUp(MotionBlind):
         
         self._parse_response(response)
 
-    def Set_position(self, position, motor: str = "B"):
+    def Set_position(self, position, motor: str = "B", width: int = None):
         """
         Set the position of the blind.
         
@@ -962,6 +962,9 @@ class MotionTopDownBottomUp(MotionBlind):
         0 = open
         100 = closed
         """
+        if width is None:
+            width = self.width
+
         if motor == "B":
             if position >= self._position["T"]:
                 data = {"targetPosition_B": position}
@@ -975,8 +978,8 @@ class MotionTopDownBottomUp(MotionBlind):
                 _LOGGER.error('Error setting position, the top of the TDBU blind can not go below the bottom of the TDBU blind')
                 return
         elif motor == "C":
-            if position >= self.width/2.0 and position <= (100 - self.width/2.0): 
-                data = {"targetPosition_T": position-self.width/2.0, "targetPosition_B": position+self.width/2.0}
+            if position >= width/2.0 and position <= (100 - width/2.0): 
+                data = {"targetPosition_T": position-width/2.0, "targetPosition_B": position+width/2.0}
             else:
                 _LOGGER.error('Error setting position, the combined TDBU blind cannot reach position %.1f, because including the width of %.1f, it would exceed its limits', position, width)
                 return
