@@ -191,18 +191,18 @@ A TDBU blind device has two motors designated by "T" = Top and "B" = Bottom to c
 Both parts can be controlled together using "C" = Combined as the motor.
 The TDBU device (that was asigned to variable 'blind_1') has the following methods and properties:
 
-| method                                         | arguments       | argument type                | explanation                                                                             |
-| ---------------------------------------------- | --------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
-| "blind_1.Update()"                             | -               | -                            | Get the status of the blind from the Motion Gateway                                     |
-| "blind_1.Stop(motor = 'B')"                    | motor           | 'B', 'T' or 'C'              | Stop the motion of Bottom or Top motor of the blind                                     |
-| "blind_1.Open(motor = 'B')"                    | motor           | 'B', 'T' or 'C'              | Move the Bottom or Top motor of the blind up                                            |
-| "blind_1.Close(motor = 'B')"                   | motor           | 'B', 'T' or 'C'              | Move the Bottom or Top motor of the blind down                                          |
-| "blind_1.Set_position(50, motor = 'B')"        | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the Bottom or Top motor of the blind                                |
-| "blind_1.Set_scaled_position(50, motor = 'B')" | position, motor | int (0-100), 'B', 'T' or 'C' | Set the position of the motor of the blind within the alowed space in which it can move |
-| "blind_1.Set_angle(90, motor = 'B')"           | angle, motor    | int (0-180), 'B', 'T' or 'C' | Set the angle/rotation of the Bottom or Top motor of the blind                          |
-| "blind_1.Register_callback("1", func)          | id, callback    | string, function             | Register a external callback function for updates of the blind                          |
-| "blind_1.Remove_callback("1")                  | id              | string                       | Remove a external callback using its id                                                 |
-| "blind_1.Clear_callbacks()                     | -               | -                            | Remove all external registered callbacks for updates of the blind                       |
+| method                                              | arguments              | argument type                             | explanation                                                                             |
+| --------------------------------------------------- | ---------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------- |
+| "blind_1.Update()"                                  | -                      | -                                         | Get the status of the blind from the Motion Gateway                                     |
+| "blind_1.Stop(motor = 'B')"                         | motor                  | 'B', 'T' or 'C'                           | Stop the motion of Bottom or Top motor of the blind                                     |
+| "blind_1.Open(motor = 'B')"                         | motor                  | 'B', 'T' or 'C'                           | Move the Bottom or Top motor of the blind up                                            |
+| "blind_1.Close(motor = 'B')"                        | motor                  | 'B', 'T' or 'C'                           | Move the Bottom or Top motor of the blind down                                          |
+| "blind_1.Set_position(50, motor = 'B', width = 20)" | position, motor, width | int (0-100), 'B', 'T' or 'C', int (0-100) | Set the position of the Bottom or Top motor of the blind, optionaly specify width       |
+| "blind_1.Set_scaled_position(50, motor = 'B')"      | position, motor        | int (0-100), 'B', 'T' or 'C'              | Set the position of the motor of the blind within the alowed space in which it can move |
+| "blind_1.Set_angle(90, motor = 'B')"                | angle, motor           | int (0-180), 'B', 'T' or 'C'              | Set the angle/rotation of the Bottom or Top motor of the blind                          |
+| "blind_1.Register_callback("1", func)               | id, callback           | string, function                          | Register a external callback function for updates of the blind                          |
+| "blind_1.Remove_callback("1")                       | id                     | string                                    | Remove a external callback using its id                                                 |
+| "blind_1.Clear_callbacks()                          | -                      | -                                         | Remove all external registered callbacks for updates of the blind                       |
 
 | property                  | value type                              | explanation                                                                                             |
 | ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
