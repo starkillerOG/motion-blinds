@@ -140,7 +140,7 @@ class MotionDiscovery(MotionCommunication):
         while True:
             time_delta = datetime.datetime.utcnow() - start_time
             
-            if time_delta.seconds > self._discovery_time:
+            if time_delta.total_seconds() > self._discovery_time:
                 break
 
             try:
@@ -599,6 +599,7 @@ class MotionBlind:
         self._max_angle = max_angle
         
         self._registered_callbacks = {}
+        self._last_status_report = datetime.datetime.utcnow()
         
         self._status = None
         self._limit_status = None
@@ -635,6 +636,50 @@ class MotionBlind:
             )
 
         return response
+
+    def _wait_on_mcast_report(self, mcast_socket):
+        """Wait untill a status report is received from the multicast socket"""
+        while True:
+            try:
+                mcast_data, (ip, _) = mcast_socket.recvfrom(SOCKET_BUFSIZE)
+                mcast_response = json.loads(mcast_data)
+
+                # check ip
+                if ip != self._gateway._ip:
+                    _LOGGER.debug("Received multicast push from a diffrent gateway with ip '%s', in Update function",
+                        ip
+                    )
+                    continue
+
+                # check mac
+                if mcast_response.get("mac") != self.mac:
+                    _LOGGER.debug("Received multicast push regarding a diffrent blind with mac '%s', in Update function",
+                        mcast_response.get("mac")
+                    )
+                    continue
+
+                # check actionResult
+                if mcast_response.get("actionResult") is not None:
+                    _LOGGER.error("Received actionResult: '%s' from multicast push within Update function",
+                        mcast_response.get("actionResult")
+                    )
+                    continue
+
+                # check msgType
+                msgType = mcast_response.get("msgType")
+                if msgType != "Report":
+                    _LOGGER.debug(
+                        "Response to update on multicast is not a Report but '%s'.",
+                        msgType,
+                    )
+                    continue
+
+                # done
+                mcast_socket.close()
+                return mcast_response
+            except socket.timeout:
+                mcast_socket.close()
+                raise
 
     def _calculate_battery_level(self, voltage):
         if voltage > 0.0 and voltage <= 9.4:
@@ -719,13 +764,20 @@ class MotionBlind:
     def _multicast_callback(self, message):
         """Process a multicast push message to update data."""
         self._parse_response(message)
+
+        if message.get("msgType") == "Report":
+            self._last_status_report = datetime.datetime.utcnow()
+
         for callback in self._registered_callbacks.values():
             callback()
 
-    def Update(self):
-        """Get the status of the blind from the Motion Gateway."""
+    def Update_from_cache(self):
+        """
+        Get the status of the blind from the cache of the Motion Gateway
+
+        No 433MHz radio communication with the blind takes place.
+        """
         response = self._gateway._read_subdevice(self.mac, self._device_type)
-        # alternative: response = self._write({"operation": 5})
         
         # check msgType
         msgType = response.get("msgType")
@@ -737,6 +789,52 @@ class MotionBlind:
             return
         
         self._parse_response(response)
+
+    def Update(self):
+        """
+        Get the status of the blind from the blind through the Motion Gateway
+
+        This will send a query to the blind to retrieve its status.
+        The Gateway will imediatly respond with the status of the blind from cache (old status).
+        As soon as the blind responds over 433MHz radio, a multicast push will be sent out by the gateway with the new status.
+        """
+        attempt = 1
+        while True:
+            if self._gateway._multicast is None:
+                mcast = self._gateway._create_mcast_socket('any')
+                mcast.settimeout(self._gateway._timeout)
+            else:
+                start = datetime.datetime.utcnow()
+            
+            # send update request
+            data = {"operation": 5}
+            response = self._write(data)
+            
+            # parse status from cache
+            self._parse_response(response)
+            
+            # wait on multicast push for new status
+            try:
+                if self._gateway._multicast is None:
+                    mcast_response = self._wait_on_mcast_report(mcast)
+
+                    self._parse_response(mcast_response)
+                    break;
+                else:
+                    while True:
+                        time_diff = self._last_status_report - start
+                        if time_diff.total_seconds() > 0:
+                            break
+                        time_past = datetime.datetime.utcnow() - start
+                        if time_past.total_seconds() > self._gateway._timeout:
+                            raise socket.timeout
+                    break
+            except socket.timeout:
+                if attempt >= 3:
+                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.", self._gateway._timeout, attempt)
+                    raise
+                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while waiting on multicast push from update request, trying again...", self._gateway._timeout, attempt)
+                attempt += 1
 
     def Stop(self):
         """Stop the motion of the blind."""
