@@ -145,16 +145,17 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 | "m.Remove_callback("1")         | id           | string           | Remove a external callback using its id                                            |
 | "m.Clear_callbacks()            | -            | -                | Remove all external registered callbacks for updates of the gateway                |
 
-| property         | value type | explanation                                         |
-| ---------------- | ---------- | --------------------------------------------------- |
-| "m.status"       | string     | Return gateway status: from GatewayStatus enum      |
-| "m.N_devices"    | int        | Return the number of connected child devices        |
-| "m.RSSI"         | int        | Return the Wi-Fi connection strength of the gateway in dBm |
-| "m.token"        | string     | Return the Token |
-| "m.access_token" | string     | Return the AccessToken |
-| "m.mac"          | string     | Return the mac address of the gateway |
-| "m.device_type"  | string     | Return the device type of the gateway |
-| "m.protocol"     | string     | Return the protocol version of the gateway |
+| property         | value type | explanation                                                                                                            |
+| ---------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| "m.available"    | boolean    | Return if the gateway is available                                                                                     |
+| "m.status"       | string     | Return gateway status: from GatewayStatus enum                                                                         |
+| "m.N_devices"    | int        | Return the number of connected child devices                                                                           |
+| "m.RSSI"         | int        | Return the Wi-Fi connection strength of the gateway in dBm                                                             |
+| "m.token"        | string     | Return the Token                                                                                                       |
+| "m.access_token" | string     | Return the AccessToken                                                                                                 |
+| "m.mac"          | string     | Return the mac address of the gateway                                                                                  |
+| "m.device_type"  | string     | Return the device type of the gateway                                                                                  |
+| "m.protocol"     | string     | Return the protocol version of the gateway                                                                             |
 | "m.device_list"  | dict       | Return a dict containing all blinds connected to the gateway, The keys in the dict are the mac adresses of the blinds. |
 
 ## Blind device
@@ -179,6 +180,7 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.blind_type"      | string     | Return the type of the blind from BlindType enum                                    |
 | "blind_1.type"            | enum       | Return the type of the blind as a BlindType enum                                    |
 | "blind_1.mac"             | string     | Return the mac address of the blind                                                 |
+| "blind_1.available"       | boolean    | Return if the blind is available                                                    |
 | "blind_1.status"          | string     | Return the current status of the blind from BlindStatus enum                        |
 | "blind_1.limit_status"    | string     | Return the current status of the limit detection of the blind from LimitStatus enum |
 | "blind_1.position"        | int        | Return the current position of the blind in % (0-100)                               |
@@ -211,6 +213,7 @@ The TDBU device (that was asigned to variable 'blind_1') has the following metho
 | "blind_1.blind_type"      | string                                  | Return the type of the blind from BlindType enum                                                        |
 | "blind_1.type"            | enum                                    | Return the type of the blind as a BlindType enum                                                        |
 | "blind_1.mac"             | string                                  | Return the mac address of the blind                                                                     |
+| "blind_1.available"       | boolean                                 | Return if the blind is available                                                                        |
 | "blind_1.status"          | {"T": string, "B": string}              | Return the current status of the blind from BlindStatus enum                                            |
 | "blind_1.limit_status"    | {"T": string, "B": string}              | Return the current status of the limit detection of the blind from LimitStatus enum                     |
 | "blind_1.position"        | {"T": int, "B": int, "C": double}       | Return the current position of the blind in % (0-100)                                                   |

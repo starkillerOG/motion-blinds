@@ -292,6 +292,7 @@ class MotionGateway(MotionCommunication):
         self._device_list = {}
         self._device_type = None
         self._status = None
+        self._available = False
         self._N_devices = None
         self._RSSI = None
         self._protocol_version = None
@@ -346,6 +347,7 @@ class MotionGateway(MotionCommunication):
                 if attempt >= 3:
                     _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while sending message '%s'", self._timeout, attempt, message)
                     s.close()
+                    self._available = False
                     raise
                 _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...", self._timeout, attempt, message)
                 s.close()
@@ -390,6 +392,7 @@ class MotionGateway(MotionCommunication):
         self._status = GatewayStatus(response["data"]["currentState"])
         self._N_devices = response["data"]["numberOfDevices"]
         self._RSSI = response["data"]["RSSI"]
+        self._available = True
 
     def _parse_device_list_response(self, response):
         """Parse the response to a device list update of the gateway"""
@@ -407,6 +410,7 @@ class MotionGateway(MotionCommunication):
         self._device_type = device_type
         self._protocol_version = response["ProtocolVersion"]
         self._token = response["token"]
+        self._available = True
         
         # calculate the acces token
         self._get_access_token()
@@ -514,6 +518,11 @@ class MotionGateway(MotionCommunication):
         self._registered_callbacks.clear()
 
     @property
+    def available(self):
+        """Return if the blind is available."""
+        return self._available
+
+    @property
     def status(self):
         """Return gateway status: from GatewayStatus enum."""
         if self._status is not None:
@@ -602,6 +611,7 @@ class MotionBlind:
         self._last_status_report = datetime.datetime.utcnow()
         
         self._status = None
+        self._available = False
         self._limit_status = None
         self._position = None
         self._angle = None
@@ -727,6 +737,7 @@ class MotionBlind:
             self._max_angle = 90
 
         self._RSSI = response["data"]["RSSI"]
+        self._available = True
 
     def _parse_response(self, response):
         """Parse a response form the blind."""
@@ -832,6 +843,7 @@ class MotionBlind:
             except socket.timeout:
                 if attempt >= 3:
                     _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.", self._gateway._timeout, attempt)
+                    self._available = False
                     raise
                 _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while waiting on multicast push from update request, trying again...", self._gateway._timeout, attempt)
                 attempt += 1
@@ -928,6 +940,11 @@ class MotionBlind:
     def mac(self):
         """Return the mac address of the blind."""
         return self._mac
+
+    @property
+    def available(self):
+        """Return if the blind is available."""
+        return self._available
 
     @property
     def status(self):
