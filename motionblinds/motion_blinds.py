@@ -821,7 +821,7 @@ class MotionBlind:
                 start = datetime.datetime.utcnow()
             
             # send update request
-            response = self._write(QUERY_DATA)
+            response = self._write(self.QUERY_DATA)
             
             # parse status from cache
             self._parse_response(response)
