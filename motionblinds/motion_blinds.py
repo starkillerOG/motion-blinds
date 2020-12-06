@@ -465,7 +465,12 @@ class MotionGateway(MotionCommunication):
         """Get the device list from the Motion Gateway."""
         msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp()}
 
-        response = self._send(msg)
+        try:
+            response = self._send(msg)
+        except socket.timeout:
+            for blind in self.device_list.values():
+                blind._available = False
+            raise
         
         # check msgType
         msgType = response.get("msgType")
@@ -489,7 +494,12 @@ class MotionGateway(MotionCommunication):
         
         msg = {"msgType":"ReadDevice", "mac": self.mac, "deviceType": self.device_type, "msgID":self._get_timestamp()}
 
-        response = self._send(msg)
+        try:
+            response = self._send(msg)
+        except socket.timeout:
+            for blind in self.device_list.values():
+                blind._available = False
+            raise
         
         # check msgType
         msgType = response.get("msgType")
