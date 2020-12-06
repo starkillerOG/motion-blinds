@@ -594,6 +594,9 @@ class MotionGateway(MotionCommunication):
 
 class MotionBlind:
     """Sub class representing a blind connected to the Motion Gateway."""
+
+    QUERY_DATA = {"operation": 5}
+
     def __init__(
         self,
         gateway: MotionGateway = None,
@@ -818,8 +821,7 @@ class MotionBlind:
                 start = datetime.datetime.utcnow()
             
             # send update request
-            data = {"operation": 5}
-            response = self._write(data)
+            response = self._write(QUERY_DATA)
             
             # parse status from cache
             self._parse_response(response)
@@ -989,6 +991,9 @@ class MotionBlind:
 
 class MotionTopDownBottomUp(MotionBlind):
     """Sub class representing a Top Down Bottom Up blind connected to the Motion Gateway."""
+
+    QUERY_DATA = {"operation_T": 5, "operation_B": 5}
+
     def __repr__(self):
         return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s %%, %s V, RSSI: %s dBm>" % (
             self.mac,
