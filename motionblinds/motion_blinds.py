@@ -243,7 +243,7 @@ class MotionMulticast(MotionCommunication):
         if self._mcastsocket is None:
             _LOGGER.info('Creating multicast socket')
             self._mcastsocket = self._create_mcast_socket(self._interface)
-            self._mcastsocket.settimeout(5.0)  # ensure you can exit the _listen_to_msg loop
+            self._mcastsocket.settimeout(2.0)  # ensure you can exit the _listen_to_msg loop
         else:
             _LOGGER.error('Multicast socket was already created.')
 
@@ -276,6 +276,7 @@ class MotionGateway(MotionCommunication):
         ip: str = None,
         key: str = None,
         timeout: float = 3.0,
+        mcast_timeout: float = 5.0,
         multicast: MotionMulticast = None,
     ):
         self._ip = ip
@@ -285,6 +286,7 @@ class MotionGateway(MotionCommunication):
         self._access_token = None
         self._gateway_mac = None
         self._timeout = timeout
+        self._mcast_timeout = mcast_timeout
 
         self._multicast = multicast
         self._registered_callbacks = {}
@@ -826,7 +828,7 @@ class MotionBlind:
         while True:
             if self._gateway._multicast is None:
                 mcast = self._gateway._create_mcast_socket('any')
-                mcast.settimeout(self._gateway._timeout)
+                mcast.settimeout(self._gateway._mcast_timeout)
             else:
                 start = datetime.datetime.utcnow()
             
@@ -849,15 +851,15 @@ class MotionBlind:
                         if time_diff.total_seconds() > 0:
                             break
                         time_past = datetime.datetime.utcnow() - start
-                        if time_past.total_seconds() > self._gateway._timeout:
+                        if time_past.total_seconds() > self._gateway._mcast_timeout:
                             raise socket.timeout
                     break
             except socket.timeout:
-                if attempt >= 3:
-                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.", self._gateway._timeout, attempt)
+                if attempt >= 5:
+                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.", self._gateway._mcast_timeout, attempt)
                     self._available = False
                     raise
-                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while waiting on multicast push from update request, trying again...", self._gateway._timeout, attempt)
+                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while waiting on multicast push from update request, trying again...", self._gateway._mcast_timeout, attempt)
                 attempt += 1
 
     def Stop(self):
