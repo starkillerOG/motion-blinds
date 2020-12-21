@@ -259,7 +259,10 @@ class MotionMulticast(MotionCommunication):
     def Stop_listen(self):
         """Stop listening."""
         self._listening = False
-        self._thread.join()
+
+        if self._thread is not None:
+            self._thread.join()
+
         self._thread = None
         _LOGGER.info('Multicast thread stopped')
 
