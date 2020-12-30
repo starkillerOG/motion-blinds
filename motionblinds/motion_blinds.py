@@ -85,7 +85,7 @@ class MotionCommunication:
     def _get_timestamp(self):
         """Get the current time and format according to required Message-ID (Timestamp)."""
         time = datetime.datetime.utcnow()
-        time_str = time.strftime("%Y%d%m%H%M%S%f")[:-3]
+        time_str = time.strftime("%Y%m%d%H%M%S%f")[:-3]
         
         return time_str
 
