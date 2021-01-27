@@ -712,15 +712,15 @@ class MotionBlind:
     def _calculate_battery_level(self, voltage):
         if voltage > 0.0 and voltage <= 9.4:
             # 2 cel battery pack (8.4V)
-            return round((voltage-6.2)*100/(8.4-6.2), 2)
+            return round((voltage-6.2)*100/(8.4-6.2), 0)
 
         if voltage > 9.4 and voltage <= 13.6:
             # 3 cel battery pack (12.6V)
-            return round((voltage-10.4)*100/(12.6-10.4), 2)
+            return round((voltage-10.4)*100/(12.6-10.4), 0)
 
         if voltage > 13.6:
             # 4 cel battery pack (16.8V)
-            return round((voltage-14.6)*100/(16.8-14.6), 2)
+            return round((voltage-14.6)*100/(16.8-14.6), 0)
 
         return 0.0
 
@@ -1182,17 +1182,17 @@ class MotionTopDownBottomUp(MotionBlind):
         For the Bottom this is the postion from the top blind to the bottom
         """
         if self._position["B"] > 0:
-            pos_top = self._position["T"]*100.0/self._position["B"]
+            pos_top = round(self._position["T"]*100.0/self._position["B"], 1)
         else:
             pos_top = 0
 
         if self._position["T"] < 100:
-            pos_bottom = (self._position["B"] - self._position["T"])*100.0/(100.0 - self._position["T"])
+            pos_bottom = round((self._position["B"] - self._position["T"])*100.0/(100.0 - self._position["T"]), 1)
         else:
             pos_bottom = 100
 
         if self.width < 100:
-            pos_combined = (self._position["C"] - self.width/2.0)*100.0/(100.0 - self.width)
+            pos_combined = round((self._position["C"] - self.width/2.0)*100.0/(100.0 - self.width), 1)
         else:
             pos_combined = 100
 
