@@ -29,6 +29,10 @@ DEVICE_TYPE_TDBU = "10000001"    # Top Down Bottom Up
 DEVICE_TYPE_DR = "10000002"      # Double Roller
 
 
+class ParseException(Exception):
+    """Exception wrapping any parse errors of a response send by a cover."""
+
+
 class GatewayStatus(IntEnum):
     """Status of the gateway."""
 
@@ -759,36 +763,44 @@ class MotionBlind:
 
     def _parse_response(self, response):
         """Parse a response form the blind."""
-        
-        # handle the part that is common among all blinds
-        self._parse_response_common(response)
-        
-        # handle specific properties
         try:
-            self._status = BlindStatus(response["data"]["operation"])
-        except ValueError:
-            if self._status != BlindStatus.Unknown:
-                _LOGGER.error(
-                    "Device with mac '%s' has status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
-                    self.mac,
-                    response["data"]["operation"],
-                )
-            self._status = BlindStatus.Unknown
-        try:
-            self._limit_status = LimitStatus(response["data"]["currentState"])
-        except ValueError:
-            if self._limit_status != LimitStatus.Unknown:
-                _LOGGER.error(
-                    "Device with mac '%s' has limit_status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
-                    self.mac,
-                    response["data"]["currentState"],
-                )
-            self._status = LimitStatus.Unknown
-        self._position = response["data"]["currentPosition"]
-        self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
-        self._battery_voltage = response["data"]["batteryLevel"]/100.0
+            # handle the part that is common among all blinds
+            self._parse_response_common(response)
+            
+            # handle specific properties
+            try:
+                self._status = BlindStatus(response["data"]["operation"])
+            except ValueError:
+                if self._status != BlindStatus.Unknown:
+                    _LOGGER.error(
+                        "Device with mac '%s' has status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                        self.mac,
+                        response["data"]["operation"],
+                    )
+                self._status = BlindStatus.Unknown
+            try:
+                self._limit_status = LimitStatus(response["data"]["currentState"])
+            except ValueError:
+                if self._limit_status != LimitStatus.Unknown:
+                    _LOGGER.error(
+                        "Device with mac '%s' has limit_status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                        self.mac,
+                        response["data"]["currentState"],
+                    )
+                self._status = LimitStatus.Unknown
+            self._position = response["data"]["currentPosition"]
+            self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
+            self._battery_voltage = response["data"]["batteryLevel"]/100.0
 
-        self._battery_level = self._calculate_battery_level(self._battery_voltage)
+            self._battery_level = self._calculate_battery_level(self._battery_voltage)
+        except KeyError as ex:
+            _LOGGER.error(
+                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s', Exception: '%s'",
+                self.mac,
+                response,
+                ex,
+            )
+            raise ParseException("Got an exception while parsing response") from ex
 
     def _multicast_callback(self, message):
         """Process a multicast push message to update data."""
@@ -1025,21 +1037,29 @@ class MotionTopDownBottomUp(MotionBlind):
 
     def _parse_response(self, response):
         """Parse a response form the blind."""
-        
-        # handle the part that is common among all blinds
-        self._parse_response_common(response)
-        
-        # handle specific properties
-        self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"])}
-        self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
-        pos_T = response["data"]["currentPosition_T"]
-        pos_B = response["data"]["currentPosition_B"]
-        pos_C = (pos_T + pos_B)/2.0
-        self._position = {"T": pos_T, "B": pos_B, "C": pos_C}
-        self._angle = None
-        self._battery_voltage = {"T": response["data"]["batteryLevel_T"]/100.0, "B": response["data"]["batteryLevel_B"]/100.0}
+        try:
+            # handle the part that is common among all blinds
+            self._parse_response_common(response)
+            
+            # handle specific properties
+            self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"])}
+            self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
+            pos_T = response["data"]["currentPosition_T"]
+            pos_B = response["data"]["currentPosition_B"]
+            pos_C = (pos_T + pos_B)/2.0
+            self._position = {"T": pos_T, "B": pos_B, "C": pos_C}
+            self._angle = None
+            self._battery_voltage = {"T": response["data"]["batteryLevel_T"]/100.0, "B": response["data"]["batteryLevel_B"]/100.0}
 
-        self._battery_level = {"T": self._calculate_battery_level(self._battery_voltage["T"]), "B": self._calculate_battery_level(self._battery_voltage["B"])}
+            self._battery_level = {"T": self._calculate_battery_level(self._battery_voltage["T"]), "B": self._calculate_battery_level(self._battery_voltage["B"])}
+        except KeyError as ex:
+            _LOGGER.error(
+                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s', Exception: '%s'",
+                self.mac,
+                response,
+                ex,
+            )
+            raise ParseException("Got an exception while parsing response") from ex
 
     def Stop(self, motor: str = "B"):
         """Stop the motion of the blind."""
