@@ -23,10 +23,10 @@ UDP_PORT_SEND = 32100
 UDP_PORT_RECEIVE = 32101
 SOCKET_BUFSIZE = 1024
 
-DEVICE_TYPE_GATEWAY = "02000002" # Gateway
-DEVICE_TYPE_BLIND = "10000000"   # Standard Blind
-DEVICE_TYPE_TDBU = "10000001"    # Top Down Bottom Up
-DEVICE_TYPE_DR = "10000002"      # Double Roller
+DEVICE_TYPES_GATEWAY = ["02000001", "02000002"] # Gateway
+DEVICE_TYPE_BLIND = "10000000"                  # Standard Blind
+DEVICE_TYPE_TDBU = "10000001"                   # Top Down Bottom Up
+DEVICE_TYPE_DR = "10000002"                     # Double Roller
 
 
 class ParseException(Exception):
@@ -163,7 +163,7 @@ class MotionDiscovery(MotionCommunication):
                 
                 # check device_type
                 device_type = response.get("deviceType")
-                if device_type != DEVICE_TYPE_GATEWAY:
+                if device_type not in DEVICE_TYPES_GATEWAY:
                     _LOGGER.error(
                         "DeviceType %s does not correspond to a gateway from a discovery response.",
                         device_type,
@@ -389,7 +389,7 @@ class MotionGateway(MotionCommunication):
 
         # check device_type
         device_type = response.get("deviceType")
-        if device_type != DEVICE_TYPE_GATEWAY:
+        if device_type not in DEVICE_TYPES_GATEWAY:
             _LOGGER.warning(
                 "DeviceType %s does not correspond to a gateway in parse update function.",
                 device_type,
@@ -408,7 +408,7 @@ class MotionGateway(MotionCommunication):
 
         # check device_type
         device_type = response.get("deviceType")
-        if device_type != DEVICE_TYPE_GATEWAY:
+        if device_type not in DEVICE_TYPES_GATEWAY:
             _LOGGER.warning(
                 "DeviceType %s does not correspond to a gateway in GetDeviceList function.",
                 device_type,
@@ -427,7 +427,7 @@ class MotionGateway(MotionCommunication):
         # add the discovered blinds to the device list.
         for blind in response["data"]:
             blind_type = blind["deviceType"]
-            if blind_type != DEVICE_TYPE_GATEWAY:
+            if blind_type not in DEVICE_TYPES_GATEWAY:
                 blind_mac = blind["mac"]
                 if blind_type in [DEVICE_TYPE_BLIND]:
                     self._device_list[blind_mac] = MotionBlind(gateway = self, mac = blind_mac, device_type = blind_type)
