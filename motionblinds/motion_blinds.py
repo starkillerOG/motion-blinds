@@ -831,6 +831,19 @@ class MotionBlind:
         
         self._parse_response(response)
 
+    def Update_trigger(self):
+        """
+        Get the status of the blind from the cache of the Motion Gateway and request a new status from the blind
+
+        This will send a query to the blind to retrieve its status, but does not wait for that new status.
+        The Gateway will imediatly respond with the status of the blind from cache (old status), this status is processed.
+        The multicast push response of the blind over 433MHz radio is not awaited.
+        """
+        response = self._write(self.QUERY_DATA)
+            
+        # parse status from cache
+        self._parse_response(response)
+
     def Update(self):
         """
         Get the status of the blind from the blind through the Motion Gateway
@@ -848,10 +861,7 @@ class MotionBlind:
                 start = datetime.datetime.utcnow()
             
             # send update request
-            response = self._write(self.QUERY_DATA)
-            
-            # parse status from cache
-            self._parse_response(response)
+            self.Update_trigger()
             
             # wait on multicast push for new status
             try:
