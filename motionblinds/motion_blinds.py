@@ -224,8 +224,8 @@ class MotionMulticast(MotionCommunication):
                 callback = self._registered_callbacks[ip_add]
                 callback(message)
 
-            except Exception as err:
-                _LOGGER.error("Cannot process multicast message: '%s'\n%s", data, err)
+            except Exception:
+                _LOGGER.exception("Cannot process multicast message: '%s'", data)
                 continue
 
         _LOGGER.info('Listener stopped')
@@ -794,11 +794,10 @@ class MotionBlind:
 
             self._battery_level = self._calculate_battery_level(self._battery_voltage)
         except KeyError as ex:
-            _LOGGER.error(
-                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s', Exception: '%s'",
+            _LOGGER.exception(
+                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
                 response,
-                ex,
             )
             raise ParseException("Got an exception while parsing response") from ex
 
@@ -1063,11 +1062,10 @@ class MotionTopDownBottomUp(MotionBlind):
 
             self._battery_level = {"T": self._calculate_battery_level(self._battery_voltage["T"]), "B": self._calculate_battery_level(self._battery_voltage["B"])}
         except KeyError as ex:
-            _LOGGER.error(
-                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s', Exception: '%s'",
+            _LOGGER.exception(
+                "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
                 response,
-                ex,
             )
             raise ParseException("Got an exception while parsing response") from ex
 
