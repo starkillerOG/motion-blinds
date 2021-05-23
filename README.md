@@ -9,6 +9,12 @@ For products see https://motion-blinds.com or https://coulisse.com/products/moti
 Shops that sell these blinds:
 - [Hornbach](https://www.hornbach.nl/)
 
+## Other brands of blinds
+This python library is primarly written for the Motion Blinds, but some other manufacturers use the same API and therefore this library also works with those brands.
+The following brands have been reported to also work with this python library:
+- [Dooya](http://www.dooya.com/)
+- [Bloc Blinds](https://www.blocblinds.com/)
+
 ## Installation
 
 Use pip:
