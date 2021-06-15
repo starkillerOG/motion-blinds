@@ -83,12 +83,14 @@ To open a blind the following example code can be used:
 Instead of blind_1.Open() you can also use blind_1.Close(), blind_1.Stop(), blind_1.Set_position(50) or blind_1.Set_angle(90)
 
 ## Multicast pushes
-This library allows to listen for multicast pushes from the gateway in a parallel thread and process these pushes to get instant updates of the gateway and connected blinds status.
-To use this parallel pushes processing a MotionMulticast class object needs to be initilized.
-The MotionMulticast.Start_listen() and MotionMulticast.Stop_listen() can then be used to start and stop the parallel thread that is listening for incoming pushes.
-The MotionMulticast class object can be supplied to the MotionGateway class to let it update that gateway and its connected blinds.
+This library allows to listen for multicast pushes from the gateway (in a parallel thread or using asyncio) and process these pushes to get instant updates of the gateway and connected blinds status.
+To use this parallel pushes processing a MotionMulticast/AsyncMotionMulticast class object needs to be initilized.
+The MotionMulticast.Start_listen()/AsyncMotionMulticast.Start_listen() and MotionMulticast.Stop_listen()/AsyncMotionMulticast.Stop_listen() can then be used to start and stop the parallel thread that is listening for incoming pushes.
+The MotionMulticast/AsyncMotionMulticast class object can be supplied to the MotionGateway class to let it update that gateway and its connected blinds.
 Externall callbacks can be registered for both gateway devices and blind devices (see tables below)
-An example code to listen for pushes for 30 seconds and print out gateway or blind information when a push comes in (when a blind finishes moving):
+If UDP multicast messages are not coming through, try using the IP adress of the host running the code as the interface instead of "any".
+### Parallel thread
+An example code to listen for pushes for 30 seconds and print out gateway or blind information when a push comes in (when a blind finishes moving) using a parallel thread:
 ```
 import time
 from motionblinds import MotionMulticast, MotionGateway
@@ -100,7 +102,7 @@ def callback_func_blind():
     for blind in m.device_list.values():
         print(blind)
 
-motion_multicast = MotionMulticast()
+motion_multicast = MotionMulticast(interface = "any")
 motion_multicast.Start_listen()
 
 m = MotionGateway(ip="192.168.1.100", key="12ab345c-d67e-8f", multicast = motion_multicast)
@@ -114,6 +116,39 @@ for blind in m.device_list.values():
 time.sleep(30)
 
 motion_multicast.Stop_listen()
+```
+### Asyncio
+An example code to listen for pushes for 30 seconds and print out gateway or blind information when a push comes in (when a blind finishes moving) using asyncio:
+```
+import asyncio
+from motionblinds import AsyncMotionMulticast, MotionGateway
+
+async def asyncio_demo(loop):
+    def callback_func_gateway():
+        print(m)
+
+    def callback_func_blind():
+        for blind in m.device_list.values():
+            print(blind)
+
+    motion_multicast = AsyncMotionMulticast(interface = "any")
+    await motion_multicast.Start_listen()
+
+    m = MotionGateway(ip="192.168.1.100", key="12ab345c-d67e-8f", multicast = motion_multicast)
+    await loop.run_in_executor(None, m.GetDeviceList)
+    await loop.run_in_executor(None, m.Update)
+
+    m.Register_callback("1", callback_func_gateway)
+    for blind in m.device_list.values():
+        blind.Register_callback("1", callback_func_blind)
+
+    await asyncio.sleep(30)
+
+    motion_multicast.Stop_listen()
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio_demo(loop))
 ```
 
 ## Discovery
