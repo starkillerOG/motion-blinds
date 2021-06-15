@@ -94,47 +94,50 @@ class MotionCommunication:
         
         return time_str
 
-    def _create_mcast_socket(self, interface):
-            """Create and bind a socket for communication."""
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    def _create_mcast_socket(self, interface, bind_interface, blocking = True):
+        """Create and bind a socket for communication."""
+        # Host IP adress is recommended as interface.
+        if interface == "any":
+            ip32bit = socket.INADDR_ANY
+            bind_interface = False
+            mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), ip32bit)
+        else:
+            ip32bit = socket.inet_aton(interface)
+            mreq = socket.inet_aton(MULTICAST_ADDRESS) + ip32bit
+        
+        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        udp_socket.setblocking(blocking)
 
-            if interface != 'any':
-                if platform.system() != "Windows":
-                    try:
-                        sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
-                    except OSError:
-                        sock.bind((interface, UDP_PORT_RECEIVE))
-                else:
-                    sock.bind((interface, UDP_PORT_RECEIVE))
+        # Required for receiving multicast
+        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-                mreq = socket.inet_aton(MULTICAST_ADDRESS) + socket.inet_aton(interface)
-            else:
-                if platform.system() != "Windows":
-                    try:
-                        sock.bind((MULTICAST_ADDRESS, UDP_PORT_RECEIVE))
-                    except OSError:
-                        sock.bind(('', UDP_PORT_RECEIVE))
-                else:
-                    sock.bind(('', UDP_PORT_RECEIVE))
-                mreq = struct.pack("=4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+        udp_socket.setsockopt(
+            socket.SOL_IP, socket.IP_MULTICAST_IF, ip32bit
+        )
 
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-            return sock
+        udp_socket.setsockopt(
+            socket.SOL_IP,
+            socket.IP_ADD_MEMBERSHIP,
+            mreq,
+        )
 
+        udp_socket.bind((interface if bind_interface else "", UDP_PORT_RECEIVE))
+
+        return udp_socket
 
 class MotionDiscovery(MotionCommunication):
     """Multicast UDP discovery of Motion Gateways."""
 
-    def __init__(self, interface='any', discovery_time=10.0):
+    def __init__(self, interface='any', bind_interface = True, discovery_time=10.0):
         self._mcastsocket = None
         self._interface = interface
+        self._bind_interface = bind_interface
         self._discovery_time = discovery_time
         
         self._discovered_devices = {}
 
     def discover(self):
-        self._mcastsocket = self._create_mcast_socket(self._interface)
+        self._mcastsocket = self._create_mcast_socket(self._interface, self._bind_interface)
         self._mcastsocket.settimeout(self._discovery_time)
         
         msg = {"msgType":"GetDeviceList", "msgID":self._get_timestamp()}
@@ -192,11 +195,12 @@ class MotionDiscovery(MotionCommunication):
 class MotionMulticast(MotionCommunication):
     """Multicast UDP communication class for a MotionGateway."""
 
-    def __init__(self, interface='any'):
+    def __init__(self, interface='any', bind_interface=True):
         self._listening = False
         self._mcastsocket = None
         self._thread = None
         self._interface = interface
+        self._bind_interface = bind_interface
 
         self._registered_callbacks = {}
 
@@ -215,12 +219,6 @@ class MotionMulticast(MotionCommunication):
                 if ip_add not in self._registered_callbacks:
                     _LOGGER.info('Unknown motion gateway ip %s', ip_add)
                     continue
-
-                if message.get("actionResult") is not None:
-                    _LOGGER.error("Received actionResult: '%s', on multicast listener from ip '%s'",
-                        message.get("actionResult"),
-                        ip_add,
-                    )
 
                 callback = self._registered_callbacks[ip_add]
                 callback(message)
@@ -247,7 +245,7 @@ class MotionMulticast(MotionCommunication):
 
         if self._mcastsocket is None:
             _LOGGER.info('Creating multicast socket')
-            self._mcastsocket = self._create_mcast_socket(self._interface)
+            self._mcastsocket = self._create_mcast_socket(self._interface, self._bind_interface)
             self._mcastsocket.settimeout(2.0)  # ensure you can exit the _listen_to_msg loop
         else:
             _LOGGER.error('Multicast socket was already created.')
@@ -445,6 +443,12 @@ class MotionGateway(MotionCommunication):
 
     def _multicast_callback(self, message):
         """Process a multicast push message to update data."""
+        if message.get("actionResult") is not None:
+            _LOGGER.error("Received actionResult: '%s', on multicast listener from ip '%s'",
+                message["actionResult"],
+                self._ip,
+            )
+
         msgType = message.get("msgType")
         if msgType == "Report":
             mac = message.get("mac")
@@ -855,7 +859,7 @@ class MotionBlind:
         attempt = 1
         while True:
             if self._gateway._multicast is None:
-                mcast = self._gateway._create_mcast_socket('any')
+                mcast = self._gateway._create_mcast_socket('any', False)
                 mcast.settimeout(self._gateway._mcast_timeout)
             else:
                 start = datetime.datetime.utcnow()
