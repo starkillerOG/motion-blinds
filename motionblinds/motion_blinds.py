@@ -71,6 +71,7 @@ class BlindStatus(IntEnum):
     Opening = 1
     Stopped = 2
     StatusQuery = 5
+    FirmwareBug = 6
 
 
 class LimitStatus(IntEnum):
