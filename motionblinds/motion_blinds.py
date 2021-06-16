@@ -11,7 +11,6 @@ import socket
 import json
 import struct
 import datetime
-import platform
 from enum import IntEnum
 from Cryptodome.Cipher import AES
 from threading import Thread
