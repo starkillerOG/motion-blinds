@@ -501,11 +501,11 @@ class MotionGateway(MotionCommunication):
 
     def Update(self):
         """Get the status of the Motion Gateway."""
-        if self._gateway_mac is None or self._device_type is None:
+        if self._gateway_mac is None or self._device_type is None or self._access_token is None:
             _LOGGER.debug("gateway mac or device_type not yet retrieved, first executing GetDeviceList to obtain it before continuing with Update.")
             self.GetDeviceList()
         
-        msg = {"msgType":"ReadDevice", "mac": self.mac, "deviceType": self.device_type, "msgID":self._get_timestamp()}
+        msg = {"msgType":"ReadDevice", "mac": self.mac, "deviceType": self.device_type, "AccessToken": self.access_token, "msgID":self._get_timestamp()}
 
         try:
             response = self._send(msg)
