@@ -388,7 +388,7 @@ class MotionGateway(MotionCommunication):
         """Parse the response to a update of the gateway"""
 
         # check device_type
-        device_type = response.get("deviceType")
+        device_type = response.get("deviceType", self._device_type)
         if device_type not in DEVICE_TYPES_GATEWAY:
             _LOGGER.warning(
                 "DeviceType %s does not correspond to a gateway in parse update function.",
@@ -407,7 +407,7 @@ class MotionGateway(MotionCommunication):
         """Parse the response to a device list update of the gateway"""
 
         # check device_type
-        device_type = response.get("deviceType")
+        device_type = response.get("deviceType", self._device_type)
         if device_type not in DEVICE_TYPES_GATEWAY:
             _LOGGER.warning(
                 "DeviceType %s does not correspond to a gateway in GetDeviceList function.",
@@ -744,7 +744,7 @@ class MotionBlind:
         """Parse the common part of a response form the blind."""
 
         # check device_type
-        device_type = response.get("deviceType")
+        device_type = response.get("deviceType", self._device_type)
         if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
@@ -754,7 +754,7 @@ class MotionBlind:
         
         # update variables
         self._mac = response["mac"]
-        self._device_type = response["deviceType"]
+        self._device_type = device_type
         try:
             self._blind_type = BlindType(response["data"]["type"])
         except ValueError:
