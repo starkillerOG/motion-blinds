@@ -197,6 +197,7 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 | "m.mac"          | string     | Return the mac address of the gateway                                                                                  |
 | "m.device_type"  | string     | Return the device type of the gateway                                                                                  |
 | "m.protocol"     | string     | Return the protocol version of the gateway                                                                             |
+| "m.firmware"     | string     | Return the firmware version of the gateway                                                                             |
 | "m.device_list"  | dict       | Return a dict containing all blinds connected to the gateway, The keys in the dict are the mac adresses of the blinds. |
 
 ## Blind device

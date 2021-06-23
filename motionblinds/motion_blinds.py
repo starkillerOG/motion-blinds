@@ -303,16 +303,18 @@ class MotionGateway(MotionCommunication):
         self._N_devices = None
         self._RSSI = None
         self._protocol_version = None
+        self._firmware_version = None
 
         if self._multicast is not None:
             self._multicast.Register_motion_gateway(ip, self._multicast_callback)
 
 
     def __repr__(self):
-        return "<MotionGateway ip: %s, mac: %s, protocol: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
+        return "<MotionGateway ip: %s, mac: %s, protocol: %s, firmware: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
             self._ip,
             self.mac,
             self.protocol,
+            self.firmware,
             self.N_devices,
             self.status,
             self.RSSI,
@@ -416,6 +418,7 @@ class MotionGateway(MotionCommunication):
         self._gateway_mac = response["mac"]
         self._device_type = device_type
         self._protocol_version = response["ProtocolVersion"]
+        self._firmware_version = response.get("fwVersion")
         self._token = response["token"]
         self._available = True
         
@@ -605,6 +608,11 @@ class MotionGateway(MotionCommunication):
     def protocol(self):
         """Return the protocol version of the gateway."""
         return self._protocol_version
+
+    @property
+    def firmware(self):
+        """Return the firmware version of the gateway."""
+        return self._firmware_version
 
     @property
     def device_list(self):
