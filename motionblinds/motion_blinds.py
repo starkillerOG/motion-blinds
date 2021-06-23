@@ -816,7 +816,7 @@ class MotionBlind:
                 self.mac,
                 response,
             )
-            raise ParseException("Got an exception while parsing response") from ex
+            raise ParseException("Got an exception while parsing response: %s", response) from ex
 
     def _multicast_callback(self, message):
         """Process a multicast push message to update data."""
@@ -1084,7 +1084,7 @@ class MotionTopDownBottomUp(MotionBlind):
                 self.mac,
                 response,
             )
-            raise ParseException("Got an exception while parsing response") from ex
+            raise ParseException("Got an exception while parsing response: %s", response) from ex
 
     def Stop(self, motor: str = "B"):
         """Stop the motion of the blind."""
