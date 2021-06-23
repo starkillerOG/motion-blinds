@@ -398,7 +398,7 @@ class MotionGateway(MotionCommunication):
         self._device_type = device_type
         self._status = GatewayStatus(response["data"]["currentState"])
         self._N_devices = response["data"]["numberOfDevices"]
-        self._RSSI = response["data"]["RSSI"]
+        self._RSSI = response["data"].get("RSSI")
         self._available = True
 
     def _parse_device_list_response(self, response):
@@ -784,6 +784,8 @@ class MotionBlind:
                 self._status = BlindStatus.Unknown
             try:
                 self._limit_status = LimitStatus(response["data"]["currentState"])
+            except KeyError:
+                self._limit_status = LimitStatus.Unknown
             except ValueError:
                 if self._limit_status != LimitStatus.Unknown:
                     _LOGGER.error(
@@ -794,9 +796,12 @@ class MotionBlind:
                 self._status = LimitStatus.Unknown
             self._position = response["data"]["currentPosition"]
             self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
-            self._battery_voltage = response["data"]["batteryLevel"]/100.0
-
-            self._battery_level = self._calculate_battery_level(self._battery_voltage)
+            try:
+                self._battery_voltage = response["data"]["batteryLevel"]/100.0
+            except KeyError:
+                self._battery_voltage = None
+            else:
+                self._battery_level = self._calculate_battery_level(self._battery_voltage)
         except KeyError as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
