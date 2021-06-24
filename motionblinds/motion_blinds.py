@@ -374,7 +374,7 @@ class MotionGateway(MotionCommunication):
 
     def _read_subdevice(self, mac, device_type):
         """Read the status of a subdevice."""
-        msg = {"msgType": "ReadDevice", "mac": mac, "deviceType": device_type, "msgID": self._get_timestamp()}
+        msg = {"msgType": "ReadDevice", "mac": mac, "deviceType": device_type, "AccessToken": self.access_token, "msgID": self._get_timestamp()}
 
         return self._send(msg)
 
