@@ -394,14 +394,16 @@ class MotionGateway(MotionCommunication):
                 "DeviceType %s does not correspond to a gateway in parse update function.",
                 device_type,
             )
-        
+
         # update variables
         self._gateway_mac = response["mac"]
         self._device_type = device_type
-        self._status = GatewayStatus(response["data"]["currentState"])
-        self._N_devices = response["data"]["numberOfDevices"]
-        self._RSSI = response["data"].get("RSSI")
         self._available = True
+        data = response.get("data")
+        if data:
+            self._status = GatewayStatus(data["currentState"])
+            self._N_devices = data["numberOfDevices"]
+            self._RSSI = data.get("RSSI")
 
     def _parse_device_list_response(self, response):
         """Parse the response to a device list update of the gateway"""
