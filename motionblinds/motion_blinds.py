@@ -673,7 +673,7 @@ class MotionBlind:
                 self.mac,
                 self.blind_type,
                 self.status,
-                self.wireless_mode_name,
+                self.wireless_name,
             )
 
         return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
@@ -686,7 +686,7 @@ class MotionBlind:
             self.battery_level,
             self.battery_voltage,
             self.RSSI,
-            self.wireless_mode_name,
+            self.wireless_name,
         )
 
     def _write(self, data):
@@ -1044,7 +1044,7 @@ class MotionBlind:
         return self._wireless_mode
 
     @property
-    def wireless_mode_name(self):
+    def wireless_name(self):
         """Return the wireless mode of the blind from WirelessMode enum as a string."""
         if self._wireless_mode is not None:
             return self._wireless_mode.name

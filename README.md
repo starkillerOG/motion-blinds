@@ -231,6 +231,8 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.battery_voltage" | double     | Return the current battery voltage of the blind in V                                |
 | "blind_1.battery_level"   | double     | Return the current battery level of the blind in %                                  |
 | "blind_1.RSSI"            | int        | Return the radio connection strength of the blind to the gateway in dBm             |
+| "blind_1.wireless_mode"   | enum       | Return the wireless mode of the blind as a WirelessMode enum                        |
+| "blind_1.wireless_name"   | string     | Return the wireless mode of the blind from WirelessMode enum                        |
 
 ## Top Down Bottom Up (TDBU) device
 A TDBU blind device has two motors designated by "T" = Top and "B" = Bottom to control the two parts of the blind.
@@ -266,3 +268,5 @@ The TDBU device (that was asigned to variable 'blind_1') has the following metho
 | "blind_1.battery_voltage" | {"T": double, "B": double}              | Return the current battery voltage of the blind in V                                                    |
 | "blind_1.battery_level"   | {"T": double, "B": double}              | Return the current battery level of the blind in %                                                      |
 | "blind_1.RSSI"            | int                                     | Return the radio connection strength of the blind to the gateway in dBm                                 |
+| "blind_1.wireless_mode"   | enum                                    | Return the wireless mode of the blind as a WirelessMode enum                                            |
+| "blind_1.wireless_name"   | string                                  | Return the wireless mode of the blind from WirelessMode enum                                            |
