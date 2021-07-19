@@ -18,6 +18,7 @@ from .motion_blinds import MotionGateway
 from .motion_blinds import MotionMulticast
 from .motion_blinds import MotionDiscovery
 from .motion_blinds import BlindType
+from .motion_blinds import WirelessMode
 from .motion_blinds import ParseException
 
 # Import async_motion_blinds module

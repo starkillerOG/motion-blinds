@@ -83,6 +83,17 @@ class LimitStatus(IntEnum):
     Limits = 3
     Limit3 = 4
 
+
+class WirelessMode(IntEnum):
+    """Wireless mode of the blind."""
+
+    Unknown = -1
+    UniDirection = 0
+    BiDirection = 1
+    BiDirectionLimits = 2
+    Others = 3
+
+
 class MotionCommunication:
     """Communication class for Motion Gateways."""
 
@@ -641,6 +652,7 @@ class MotionBlind:
         self._mac = mac
         self._device_type = device_type
         self._blind_type = None
+        self._wireless_mode = None
         self._max_angle = max_angle
         
         self._registered_callbacks = {}
@@ -656,7 +668,15 @@ class MotionBlind:
         self._RSSI = None
 
     def __repr__(self):
-        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm>" % (
+        if self._wireless_mode == WirelessMode.UniDirection:
+            return "<MotionBlind mac: %s, type: %s, status: %s, com: %s>" % (
+                self.mac,
+                self.blind_type,
+                self.status,
+                self.wireless_mode_name,
+            )
+
+        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
             self.mac,
             self.blind_type,
             self.status,
@@ -666,6 +686,7 @@ class MotionBlind:
             self.battery_level,
             self.battery_voltage,
             self.RSSI,
+            self.wireless_mode_name,
         )
 
     def _write(self, data):
@@ -768,6 +789,21 @@ class MotionBlind:
                 )
             self._blind_type = BlindType.Unknown
 
+        try:
+            self._wireless_mode = WirelessMode(response["data"]["wirelessMode"])
+        except ValueError:
+            if self._blind_type != WirelessMode.Unknown:
+                _LOGGER.error(
+                    "Device with mac '%s' has wireless_mode '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                    self.mac,
+                    response["data"].get("wirelessMode"),
+                )
+            self._blind_type = WirelessMode.Unknown
+
+        if self._wireless_mode == WirelessMode.UniDirection:
+            self._available = True
+            return
+
         # Check max angle
         if self._blind_type in [BlindType.ShangriLaBlind]:
             self._max_angle = 90
@@ -792,6 +828,10 @@ class MotionBlind:
                         response["data"]["operation"],
                     )
                 self._status = BlindStatus.Unknown
+
+            if self._wireless_mode == WirelessMode.UniDirection:
+                return
+
             try:
                 self._limit_status = LimitStatus(response["data"]["currentState"])
             except KeyError:
@@ -870,6 +910,11 @@ class MotionBlind:
         The Gateway will imediatly respond with the status of the blind from cache (old status).
         As soon as the blind responds over 433MHz radio, a multicast push will be sent out by the gateway with the new status.
         """
+        if self._wireless_mode == WirelessMode.UniDirection:
+            # UniDirection blinds cannot send their state, so do not wait on multicast
+            self.Update_trigger()
+            return
+
         attempt = 1
         while True:
             if self._gateway._multicast is None:
@@ -992,6 +1037,19 @@ class MotionBlind:
     def type(self):
         """Return the type of the blind as a BlindType enum."""
         return self._blind_type
+
+    @property
+    def wireless_mode(self):
+        """Return the wireless mode of the blind as a WirelessMode enum."""
+        return self._wireless_mode
+
+    @property
+    def wireless_mode_name(self):
+        """Return the wireless mode of the blind from WirelessMode enum as a string."""
+        if self._wireless_mode is not None:
+            return self._wireless_mode.name
+
+        return self._wireless_mode
 
     @property
     def mac(self):
