@@ -14,6 +14,7 @@ This python library is primarly written for the Motion Blinds, but some other ma
 The following brands have been reported to also work with this python library:
 - [Dooya](http://www.dooya.com/)
 - [Bloc Blinds](https://www.blocblinds.com/)
+- [Brel Home](https://www.brel-home.nl/)
 
 ## Installation
 
