@@ -59,6 +59,7 @@ class BlindType(IntEnum):
     CurtainLeft = 13
     CurtainRight = 14
     DoubleRoller = 17
+    VerticalBlind = 28
     Switch = 43
 
 
