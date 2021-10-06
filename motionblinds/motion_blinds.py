@@ -793,24 +793,24 @@ class MotionBlind:
         try:
             self._wireless_mode = WirelessMode(response["data"]["wirelessMode"])
         except ValueError:
-            if self._blind_type != WirelessMode.Unknown:
+            if self._wireless_mode != WirelessMode.Unknown:
                 _LOGGER.error(
                     "Device with mac '%s' has wireless_mode '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
                     self.mac,
                     response["data"].get("wirelessMode"),
                 )
-            self._blind_type = WirelessMode.Unknown
-
-        if self._wireless_mode == WirelessMode.UniDirection:
-            self._available = True
-            return
+            self._wireless_mode = WirelessMode.Unknown
 
         # Check max angle
         if self._blind_type in [BlindType.ShangriLaBlind]:
             self._max_angle = 90
 
-        self._RSSI = response["data"]["RSSI"]
         self._available = True
+
+        if self._wireless_mode == WirelessMode.UniDirection:
+            return
+
+        self._RSSI = response["data"]["RSSI"]
 
     def _parse_response(self, response):
         """Parse a response form the blind."""
