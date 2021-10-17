@@ -95,7 +95,7 @@ class WirelessMode(IntEnum):
     Others = 3
 
 
-def log_hide(message)
+def log_hide(message):
     """Hide security sensitive information from log messages"""
     if type(message) != dict:
         return message
