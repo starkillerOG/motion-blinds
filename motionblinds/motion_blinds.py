@@ -95,6 +95,19 @@ class WirelessMode(IntEnum):
     Others = 3
 
 
+def log_hide(message)
+    """Hide security sensitive information from log messages"""
+    if type(message) != dict:
+        return message
+
+    if "token" in message:
+        message["token"] = "xxxxxxxx-xxxx-xx"
+    if "AccessToken" in message:
+        message["AccessToken"] = "xxxxxxxx-xxxx-xx"
+
+    return message
+
+
 class MotionCommunication:
     """Communication class for Motion Gateways."""
 
@@ -235,7 +248,7 @@ class MotionMulticast(MotionCommunication):
                 callback(message)
 
             except Exception:
-                _LOGGER.exception("Cannot process multicast message: '%s'", data)
+                _LOGGER.exception("Cannot process multicast message: '%s'", log_hide(data))
                 continue
 
         _LOGGER.info('Listener stopped')
@@ -366,11 +379,11 @@ class MotionGateway(MotionCommunication):
                 break
             except socket.timeout:
                 if attempt >= 3:
-                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while sending message '%s'", self._timeout, attempt, message)
+                    _LOGGER.error("Timeout of %.1f sec occurred on %i attempts while sending message '%s'", self._timeout, attempt, log_hide(message))
                     s.close()
                     self._available = False
                     raise
-                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...", self._timeout, attempt, message)
+                _LOGGER.debug("Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...", self._timeout, attempt, log_hide(message))
                 s.close()
                 attempt += 1
         
@@ -379,7 +392,7 @@ class MotionGateway(MotionCommunication):
         if response.get("actionResult") is not None:
             _LOGGER.error("Received actionResult: '%s', when sending message: '%s'",
                 response.get("actionResult"),
-                message
+                log_hide(message)
             )
         
         return response
@@ -470,26 +483,26 @@ class MotionGateway(MotionCommunication):
             mac = message.get("mac")
             if mac not in self.device_list:
                 if self.device_list:
-                    _LOGGER.warning("Multicast push with mac '%s' not in device_list, message: '%s'", mac, message)
+                    _LOGGER.warning("Multicast push with mac '%s' not in device_list, message: '%s'", mac, log_hide(message))
                 return
             self.device_list[mac]._multicast_callback(message)
         elif msgType == "Heartbeat":
             mac = message.get("mac")
             if mac != self._gateway_mac and self._gateway_mac is not None:
-                _LOGGER.warning("Multicast Heartbeat with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, message)
+                _LOGGER.warning("Multicast Heartbeat with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, log_hide(message))
                 return
             self._parse_update_response(message)
             for callback in self._registered_callbacks.values():
                 callback()
         elif msgType == "GetDeviceListAck":
             if mac != self._gateway_mac and self._gateway_mac is not None:
-                _LOGGER.warning("Multicast GetDeviceListAck with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, message)
+                _LOGGER.warning("Multicast GetDeviceListAck with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, log_hide(message))
                 return
             self._parse_device_list_response(message)
             for callback in self._registered_callbacks.values():
                 callback()
         else:
-            _LOGGER.warning("Unknown msgType '%s' received from multicast push with message: '%s'", msgType, message)
+            _LOGGER.warning("Unknown msgType '%s' received from multicast push with message: '%s'", msgType, log_hide(message))
             return
 
     def GetDeviceList(self):
@@ -858,7 +871,7 @@ class MotionBlind:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
-                response,
+                log_hide(response),
             )
             raise ParseException("Got an exception while parsing response: %s", response) from ex
 
@@ -1144,7 +1157,7 @@ class MotionTopDownBottomUp(MotionBlind):
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
-                response,
+                log_hide(response),
             )
             raise ParseException("Got an exception while parsing response: %s", response) from ex
 
