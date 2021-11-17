@@ -479,15 +479,14 @@ class MotionGateway(MotionCommunication):
             )
 
         msgType = message.get("msgType")
+        mac = message.get("mac")
         if msgType == "Report":
-            mac = message.get("mac")
             if mac not in self.device_list:
                 if self.device_list:
                     _LOGGER.warning("Multicast push with mac '%s' not in device_list, message: '%s'", mac, log_hide(message))
                 return
             self.device_list[mac]._multicast_callback(message)
         elif msgType == "Heartbeat":
-            mac = message.get("mac")
             if mac != self._gateway_mac and self._gateway_mac is not None:
                 _LOGGER.warning("Multicast Heartbeat with mac '%s' does not agree with gateway mac '%s', message: '%s'", mac, self._gateway_mac, log_hide(message))
                 return
