@@ -390,9 +390,10 @@ class MotionGateway(MotionCommunication):
         response = json.loads(data)
         
         if response.get("actionResult") is not None:
-            _LOGGER.error("Received actionResult: '%s', when sending message: '%s'",
+            _LOGGER.error("Received actionResult: '%s', when sending message: '%s', got response: '%s'",
                 response.get("actionResult"),
                 log_hide(message)
+                log_hide(response)
             )
         
         return response
@@ -473,10 +474,12 @@ class MotionGateway(MotionCommunication):
     def _multicast_callback(self, message):
         """Process a multicast push message to update data."""
         if message.get("actionResult") is not None:
-            _LOGGER.error("Received actionResult: '%s', on multicast listener from ip '%s'",
+            _LOGGER.error("Received actionResult: '%s', on multicast listener from ip '%s', got response: '%s'",
                 message["actionResult"],
                 self._ip,
+                log_hide(message),
             )
+            return
 
         msgType = message.get("msgType")
         mac = message.get("mac")
@@ -780,6 +783,11 @@ class MotionBlind:
     def _parse_response_common(self, response):
         """Parse the common part of a response form the blind."""
 
+        # Check for actionResult (errors)
+        if message.get("actionResult") is not None:
+            # Error already logged in _send function
+            return False
+
         # check device_type
         device_type = response.get("deviceType", self._device_type)
         if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR]:
@@ -821,15 +829,18 @@ class MotionBlind:
         self._available = True
 
         if self._wireless_mode == WirelessMode.UniDirection:
-            return
+            return True
 
         self._RSSI = response["data"]["RSSI"]
+
+        return True
 
     def _parse_response(self, response):
         """Parse a response form the blind."""
         try:
             # handle the part that is common among all blinds
-            self._parse_response_common(response)
+            if not self._parse_response_common(response):
+                return
             
             # handle specific properties
             try:
@@ -1139,8 +1150,9 @@ class MotionTopDownBottomUp(MotionBlind):
         """Parse a response form the blind."""
         try:
             # handle the part that is common among all blinds
-            self._parse_response_common(response)
-            
+            if not self._parse_response_common(response):
+                return
+
             # handle specific properties
             self._status = {"T": BlindStatus(response["data"]["operation_T"]), "B": BlindStatus(response["data"]["operation_B"])}
             self._limit_status = {"T": LimitStatus(response["data"]["currentState_T"]), "B": LimitStatus(response["data"]["currentState_B"])}
