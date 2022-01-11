@@ -97,13 +97,16 @@ class WirelessMode(IntEnum):
 
 def log_hide(message):
     """Hide security sensitive information from log messages"""
+    from re import compile, sub
+
     if type(message) != dict:
         return message
 
+    hide_pattern = compile('[a-zA-Z0-9]')
     if "token" in message:
-        message["token"] = "xxxxxxxx-xxxx-xx"
+        message["token"] = sub(hide_pattern, 'x', message["token"])
     if "AccessToken" in message:
-        message["AccessToken"] = "xxxxxxxx-xxxx-xx"
+        message["AccessToken"] = sub(hide_pattern, 'x', message["AccessToken"])
 
     return message
 
