@@ -143,6 +143,7 @@ class MotionCommunication:
                 socket.IPPROTO_IP, socket.IP_MULTICAST_IF, ip32bit
             )
         except:
+            _LOGGER.error("Error creating multicast socket using IPPROTO_IP, trying SOL_IP")
             udp_socket.setsockopt(
                 socket.SOL_IP, socket.IP_MULTICAST_IF, ip32bit
             )
@@ -154,6 +155,7 @@ class MotionCommunication:
                 mreq,
             )
         except:
+            _LOGGER.error("Error adding multicast socket membership using IPPROTO_IP, trying SOL_IP")
             udp_socket.setsockopt(
                 socket.SOL_IP,
                 socket.IP_ADD_MEMBERSHIP,
