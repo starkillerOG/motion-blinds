@@ -137,16 +137,28 @@ class MotionCommunication:
 
         # Required for receiving multicast
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
+        try:
+            udp_socket.setsockopt(
+                socket.IPPROTO_IP, socket.IP_MULTICAST_IF, ip32bit
+            )
+        except:
+            udp_socket.setsockopt(
+                socket.SOL_IP, socket.IP_MULTICAST_IF, ip32bit
+            )
 
-        udp_socket.setsockopt(
-            socket.SOL_IP, socket.IP_MULTICAST_IF, ip32bit
-        )
-
-        udp_socket.setsockopt(
-            socket.SOL_IP,
-            socket.IP_ADD_MEMBERSHIP,
-            mreq,
-        )
+        try:
+            udp_socket.setsockopt(
+                socket.IPPROTO_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                mreq,
+            )
+        except:
+            udp_socket.setsockopt(
+                socket.SOL_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                mreq,
+            )
 
         udp_socket.bind((interface if bind_interface else "", UDP_PORT_RECEIVE))
 
