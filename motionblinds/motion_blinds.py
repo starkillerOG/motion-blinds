@@ -409,8 +409,8 @@ class MotionGateway(MotionCommunication):
         if response.get("actionResult") is not None:
             _LOGGER.error("Received actionResult: '%s', when sending message: '%s', got response: '%s'",
                 response.get("actionResult"),
-                log_hide(message)
-                log_hide(response)
+                log_hide(message),
+                log_hide(response),
             )
         
         return response
@@ -774,7 +774,7 @@ class MotionBlind:
                 # check actionResult
                 if mcast_response.get("actionResult") is not None:
                     _LOGGER.error("Received actionResult: '%s' from multicast push within Update function",
-                        mcast_response.get("actionResult")
+                        mcast_response.get("actionResult"),
                     )
                     continue
 
@@ -813,7 +813,7 @@ class MotionBlind:
         """Parse the common part of a response form the blind."""
 
         # Check for actionResult (errors)
-        if message.get("actionResult") is not None:
+        if response.get("actionResult") is not None:
             # Error already logged in _send function
             return False
 
