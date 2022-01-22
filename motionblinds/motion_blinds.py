@@ -886,6 +886,10 @@ class MotionBlind:
                         response["data"]["currentState"],
                     )
                 self._status = LimitStatus.Unknown
+
+            if self._wireless_mode == WirelessMode.BiDirectionLimits:
+                return
+
             self._position = response["data"]["currentPosition"]
             self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
             try:
