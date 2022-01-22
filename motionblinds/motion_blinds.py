@@ -711,11 +711,13 @@ class MotionBlind:
             )
 
         if self._wireless_mode == WirelessMode.BiDirectionLimits:
-            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, RSSI: %s dBm, com: %s>" % (
+            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
                 self.mac,
                 self.blind_type,
                 self.status,
                 self.limit_status,
+                self.battery_level,
+                self.battery_voltage,
                 self.RSSI,
                 self.wireless_name,
             )
@@ -897,17 +899,18 @@ class MotionBlind:
                     )
                 self._status = LimitStatus.Unknown
 
-            if self._wireless_mode == WirelessMode.BiDirectionLimits:
-                return
-
-            self._position = response["data"]["currentPosition"]
-            self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
             try:
                 self._battery_voltage = response["data"]["batteryLevel"]/100.0
             except KeyError:
                 self._battery_voltage = None
             else:
                 self._battery_level = self._calculate_battery_level(self._battery_voltage)
+
+            if self._wireless_mode == WirelessMode.BiDirectionLimits:
+                return
+
+            self._position = response["data"]["currentPosition"]
+            self._angle = response["data"]["currentAngle"]*(180.0/self._max_angle)
         except KeyError as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
