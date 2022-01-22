@@ -20,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 class AsyncMotionMulticast(MotionCommunication):
     """Async Multicast UDP communication class for a MotionGateway."""
 
-    def __init__(self, interface='any', bind_interface = True):
+    def __init__(self, interface="any", bind_interface=True):
         self._listen_couroutine = None
         self._interface = interface
         self._bind_interface = bind_interface
@@ -29,7 +29,9 @@ class AsyncMotionMulticast(MotionCommunication):
 
     def _create_udp_listener(self):
         """Create the UDP multicast socket and protocol."""
-        udp_socket = self._create_mcast_socket(self._interface, self._bind_interface, blocking = False)
+        udp_socket = self._create_mcast_socket(
+            self._interface, self._bind_interface, blocking=False
+        )
 
         loop = asyncio.get_event_loop()
 
@@ -41,13 +43,18 @@ class AsyncMotionMulticast(MotionCommunication):
     def Register_motion_gateway(self, ip, callback):
         """Register a Motion Gateway to this Multicast listener."""
         if ip in self._registered_callbacks:
-            _LOGGER.error("A callback for ip '%s' was already registed, overwriting previous callback", ip)
+            _LOGGER.error(
+                "A callback for ip '%s' was already registed, overwriting previous callback",
+                ip,
+            )
         self._registered_callbacks[ip] = callback
 
     async def Start_listen(self):
         """Start listening."""
         if self._listen_couroutine is not None:
-            _LOGGER.error('Multicast listener already started, not starting another one.')
+            _LOGGER.error(
+                "Multicast listener already started, not starting another one."
+            )
             return
 
         listen_task = self._create_udp_listener()
@@ -76,12 +83,14 @@ class AsyncMotionMulticast(MotionCommunication):
             """Set the transport."""
             self.transport = transport
             self._connected = True
-            _LOGGER.info('MotionMulticast listener started')
+            _LOGGER.info("MotionMulticast listener started")
 
         def connection_lost(self, exc):
             """Handle connection lost."""
             if self._connected:
-                _LOGGER.error("Connection unexpectedly lost in MotionMulticast listener: %s", exc)
+                _LOGGER.error(
+                    "Connection unexpectedly lost in MotionMulticast listener: %s", exc
+                )
 
         def datagram_received(self, data, addr):
             """Handle received messages."""
@@ -90,7 +99,7 @@ class AsyncMotionMulticast(MotionCommunication):
                 message = json.loads(data)
 
                 if ip_add not in self._parent._registered_callbacks:
-                    _LOGGER.info('Unknown motion gateway ip %s', ip_add)
+                    _LOGGER.info("Unknown motion gateway ip %s", ip_add)
                     return
 
                 callback = self._parent._registered_callbacks[ip_add]
