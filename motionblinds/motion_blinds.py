@@ -710,6 +710,16 @@ class MotionBlind:
                 self.wireless_name,
             )
 
+        if self._wireless_mode == WirelessMode.BiDirectionLimits:
+            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, RSSI: %s dBm, com: %s>" % (
+                self.mac,
+                self.blind_type,
+                self.status,
+                self.limit_status,
+                self.RSSI,
+                self.wireless_name,
+            )
+
         return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
             self.mac,
             self.blind_type,
