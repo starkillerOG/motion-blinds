@@ -21,6 +21,7 @@ MULTICAST_ADDRESS = "238.0.0.18"
 UDP_PORT_SEND = 32100
 UDP_PORT_RECEIVE = 32101
 SOCKET_BUFSIZE = 4096
+MAX_RESPONSE_LENGTH = 1024
 
 DEVICE_TYPES_GATEWAY = ["02000001", "02000002"] # Gateway
 DEVICE_TYPE_BLIND = "10000000"                  # Standard Blind
@@ -337,6 +338,7 @@ class MotionGateway(MotionCommunication):
         key: str = None,
         timeout: float = 3.0,
         mcast_timeout: float = 5.0,
+        multi_resp_timeout: float = 0.2,
         multicast: MotionMulticast = None,
     ):
         self._ip = ip
@@ -347,6 +349,7 @@ class MotionGateway(MotionCommunication):
         self._gateway_mac = None
         self._timeout = timeout
         self._mcast_timeout = mcast_timeout
+        self._multi_resp_timeout = multi_resp_timeout
 
         self._multicast = multicast
         self._registered_callbacks = {}
@@ -396,9 +399,10 @@ class MotionGateway(MotionCommunication):
 
         return self._access_token
 
-    def _send(self, message):
+    def _send(self, message, single_response = True):
         """Send a command to the Motion Gateway."""
         attempt = 1
+        data = []
         while True:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -406,11 +410,33 @@ class MotionGateway(MotionCommunication):
 
                 s.sendto(bytes(json.dumps(message), "utf-8"), (self._ip, UDP_PORT_SEND))
 
-                data, addr = s.recvfrom(SOCKET_BUFSIZE)
+                while True:
+                    single_data, addr = s.recvfrom(SOCKET_BUFSIZE)
+                    data.append(single_data)
+
+                    if len(single_data) < int(0.9*MAX_RESPONSE_LENGTH):
+                        break
+
+                    s.settimeout(self._multi_resp_timeout)
+
+                    if single_response:
+                        _LOGGER.error(
+                            "Response of length %i>%i received, while only expecting single response,"
+                            " while sending message '%s', got response: '%s'",
+                            len(single_data),
+                            int(0.9*MAX_RESPONSE_LENGTH),
+                            log_hide(message),
+                            log_hide(json.loads(single_data)),
+                        )
+                        break
 
                 s.close()
                 break
             except socket.timeout:
+                if len(data) > 0:
+                    s.close()
+                    break
+
                 if attempt >= 3:
                     _LOGGER.error(
                         "Timeout of %.1f sec occurred on %i attempts while sending message '%s'",
@@ -430,17 +456,23 @@ class MotionGateway(MotionCommunication):
                 s.close()
                 attempt += 1
 
-        response = json.loads(data)
+        responses = []
+        for d in data:
+            responses.append(json.loads(d))
 
-        if response.get("actionResult") is not None:
-            _LOGGER.error(
-                "Received actionResult: '%s', when sending message: '%s', got response: '%s'",
-                response.get("actionResult"),
-                log_hide(message),
-                log_hide(response),
-            )
+        for response in responses:
+            if response.get("actionResult") is not None:
+                _LOGGER.error(
+                    "Received actionResult: '%s', when sending message: '%s', got response: '%s'",
+                    response.get("actionResult"),
+                    log_hide(message),
+                    log_hide(response),
+                )
 
-        return response
+        if single_response:
+            return responses[0]
+
+        return responses
 
     def _read_subdevice(self, mac, device_type):
         """Read the status of a subdevice."""
@@ -597,23 +629,24 @@ class MotionGateway(MotionCommunication):
         msg = {"msgType": "GetDeviceList", "msgID": self._get_timestamp()}
 
         try:
-            response = self._send(msg)
+            responses = self._send(msg, single_response = False)
         except socket.timeout:
             for blind in self.device_list.values():
                 blind._available = False
             raise
 
-        # check msgType
-        msgType = response.get("msgType")
-        if msgType != "GetDeviceListAck":
-            _LOGGER.error(
-                "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
-                msgType,
-            )
-            return
+        for response in responses:
+            # check msgType
+            msgType = response.get("msgType")
+            if msgType != "GetDeviceListAck":
+                _LOGGER.error(
+                    "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
+                    msgType,
+                )
+                return
 
-        # parse response
-        self._parse_device_list_response(response)
+            # parse response
+            self._parse_device_list_response(response)
 
         return self._device_list
 
