@@ -532,6 +532,11 @@ class MotionGateway(MotionCommunication):
                 device_type,
             )
 
+        # check for token change
+        if self._token is not None and self._token != response["token"]:
+            _LOGGER.warning("Gateway token has changed.")
+            self._access_token = None
+
         # update variables
         self._gateway_mac = response["mac"]
         self._device_type = device_type
