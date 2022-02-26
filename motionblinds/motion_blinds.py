@@ -1058,6 +1058,7 @@ class MotionBlind:
                 return
 
             self._position = response["data"]["currentPosition"]
+            self._position = response["data"].get("currentPosition", 0)
             self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
         except KeyError as ex:
             _LOGGER.exception(
