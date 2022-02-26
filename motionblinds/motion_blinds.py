@@ -28,6 +28,11 @@ DEVICE_TYPE_BLIND = "10000000"                  # Standard Blind
 DEVICE_TYPE_TDBU = "10000001"                   # Top Down Bottom Up
 DEVICE_TYPE_DR = "10000002"                     # Double Roller
 
+DEVICE_TYPE_WIFI_BLIND = "22000002"             # Standard Blind direct WiFi
+DEVICE_TYPES_WIFI = [DEVICE_TYPE_WIFI_BLIND]    # Direct WiFi devices
+
+DEVICE_TYPES_CONTROLLER = DEVICE_TYPES_GATEWAY + DEVICE_TYPES_WIFI
+
 
 class ParseException(Exception):
     """Exception wrapping any parse errors of a response send by a cover."""
@@ -36,6 +41,7 @@ class ParseException(Exception):
 class GatewayStatus(IntEnum):
     """Status of the gateway."""
 
+    Unknown = -1
     Working = 1
     Pairing = 2
     Updating = 3
@@ -213,9 +219,9 @@ class MotionDiscovery(MotionCommunication):
 
                 # check device_type
                 device_type = response.get("deviceType")
-                if device_type not in DEVICE_TYPES_GATEWAY:
+                if device_type not in DEVICE_TYPES_CONTROLLER:
                     _LOGGER.error(
-                        "DeviceType %s does not correspond to a gateway from a discovery response.",
+                        "DeviceType %s does not correspond to a gateway or WiFi blind from a discovery response.",
                         device_type,
                     )
                     continue
@@ -505,9 +511,9 @@ class MotionGateway(MotionCommunication):
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
-        if device_type not in DEVICE_TYPES_GATEWAY:
+        if device_type not in DEVICE_TYPES_CONTROLLER:
             _LOGGER.warning(
-                "DeviceType %s does not correspond to a gateway in parse update function.",
+                "DeviceType %s does not correspond to a gateway or WiFi blind in parse update function.",
                 device_type,
             )
 
@@ -517,8 +523,8 @@ class MotionGateway(MotionCommunication):
         self._available = True
         data = response.get("data")
         if data:
-            self._status = GatewayStatus(data["currentState"])
-            self._N_devices = data["numberOfDevices"]
+            self._status = GatewayStatus(data.get("currentState", GatewayStatus.Unknown))
+            self._N_devices = data.get("numberOfDevices", 0)
             self._RSSI = data.get("RSSI")
 
     def _parse_device_list_response(self, response):
@@ -526,9 +532,9 @@ class MotionGateway(MotionCommunication):
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
-        if device_type not in DEVICE_TYPES_GATEWAY:
+        if device_type not in DEVICE_TYPES_CONTROLLER:
             _LOGGER.warning(
-                "DeviceType %s does not correspond to a gateway in GetDeviceList function.",
+                "DeviceType %s does not correspond to a gateway or WiFi blind in GetDeviceList function.",
                 device_type,
             )
 
@@ -566,6 +572,10 @@ class MotionGateway(MotionCommunication):
                     )
                 elif blind_type in [DEVICE_TYPE_TDBU]:
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
+                        gateway=self, mac=blind_mac, device_type=blind_type
+                    )
+                elif blind_type in [DEVICE_TYPE_WIFI_BLIND]:
+                    self._device_list[blind_mac] = MotionBlind(
                         gateway=self, mac=blind_mac, device_type=blind_type
                     )
                 else:
@@ -951,7 +961,7 @@ class MotionBlind:
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
-        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR]:
+        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR, DEVICE_TYPE_WIFI_BLIND]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
                 self.mac,
@@ -963,6 +973,8 @@ class MotionBlind:
         self._device_type = device_type
         try:
             self._blind_type = BlindType(response["data"]["type"])
+        except KeyError:
+            pass
         except ValueError:
             if self._blind_type != BlindType.Unknown:
                 _LOGGER.error(
@@ -974,6 +986,8 @@ class MotionBlind:
 
         try:
             self._wireless_mode = WirelessMode(response["data"]["wirelessMode"])
+        except KeyError:
+            pass
         except ValueError:
             if self._wireless_mode != WirelessMode.Unknown:
                 _LOGGER.error(
@@ -1006,6 +1020,8 @@ class MotionBlind:
             # handle specific properties
             try:
                 self._status = BlindStatus(response["data"]["operation"])
+            except KeyError:
+                self._status = BlindStatus.Unknown
             except ValueError:
                 if self._status != BlindStatus.Unknown:
                     _LOGGER.error(
@@ -1042,7 +1058,7 @@ class MotionBlind:
                 return
 
             self._position = response["data"]["currentPosition"]
-            self._angle = response["data"]["currentAngle"] * (180.0 / self._max_angle)
+            self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
         except KeyError as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
