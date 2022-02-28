@@ -23,3 +23,7 @@ from .motion_blinds import ParseException
 
 # Import async_motion_blinds module
 from .async_motion_blinds import AsyncMotionMulticast
+
+# Import constants
+from .motion_blinds import DEVICE_TYPES_GATEWAY
+from .motion_blinds import DEVICE_TYPES_WIFI
