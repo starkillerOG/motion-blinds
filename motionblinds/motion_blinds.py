@@ -13,7 +13,7 @@ import struct
 import datetime
 from enum import IntEnum
 from Cryptodome.Cipher import AES
-from threading import Thread
+from threading import Lock, Thread
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -364,6 +364,7 @@ class MotionGateway(MotionCommunication):
         self._ip = ip
         self._key = key
         self._token = None
+        self._lock = Lock()
 
         self._access_token = None
         self._gateway_mac = None
@@ -423,58 +424,59 @@ class MotionGateway(MotionCommunication):
         """Send a command to the Motion Gateway."""
         attempt = 1
         data = []
-        while True:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.settimeout(self._timeout)
+        with self._lock:
+            while True:
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.settimeout(self._timeout)
 
-                s.sendto(bytes(json.dumps(message), "utf-8"), (self._ip, UDP_PORT_SEND))
+                    s.sendto(bytes(json.dumps(message), "utf-8"), (self._ip, UDP_PORT_SEND))
 
-                while True:
-                    single_data, addr = s.recvfrom(SOCKET_BUFSIZE)
-                    data.append(single_data)
+                    while True:
+                        single_data, addr = s.recvfrom(SOCKET_BUFSIZE)
+                        data.append(single_data)
 
-                    if len(single_data) < int(0.9*MAX_RESPONSE_LENGTH):
-                        break
+                        if len(single_data) < int(0.9*MAX_RESPONSE_LENGTH):
+                            break
 
-                    s.settimeout(self._multi_resp_timeout)
+                        s.settimeout(self._multi_resp_timeout)
 
-                    if single_response:
-                        _LOGGER.error(
-                            "Response of length %i>%i received, while only expecting single response,"
-                            " while sending message '%s', got response: '%s'",
-                            len(single_data),
-                            int(0.9*MAX_RESPONSE_LENGTH),
-                            log_hide(message),
-                            log_hide(json.loads(single_data)),
-                        )
-                        break
+                        if single_response:
+                            _LOGGER.error(
+                                "Response of length %i>%i received, while only expecting single response,"
+                                " while sending message '%s', got response: '%s'",
+                                len(single_data),
+                                int(0.9*MAX_RESPONSE_LENGTH),
+                                log_hide(message),
+                                log_hide(json.loads(single_data)),
+                            )
+                            break
 
-                s.close()
-                break
-            except socket.timeout:
-                if len(data) > 0:
                     s.close()
                     break
+                except socket.timeout:
+                    if len(data) > 0:
+                        s.close()
+                        break
 
-                if attempt >= 3:
-                    _LOGGER.error(
-                        "Timeout of %.1f sec occurred on %i attempts while sending message '%s'",
+                    if attempt >= 3:
+                        _LOGGER.error(
+                            "Timeout of %.1f sec occurred on %i attempts while sending message '%s'",
+                            self._timeout,
+                            attempt,
+                            log_hide(message),
+                        )
+                        s.close()
+                        self._available = False
+                        raise
+                    _LOGGER.debug(
+                        "Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...",
                         self._timeout,
                         attempt,
                         log_hide(message),
                     )
                     s.close()
-                    self._available = False
-                    raise
-                _LOGGER.debug(
-                    "Timeout of %.1f sec occurred at %i attempts while sending message '%s', trying again...",
-                    self._timeout,
-                    attempt,
-                    log_hide(message),
-                )
-                s.close()
-                attempt += 1
+                    attempt += 1
 
         responses = []
         for d in data:
