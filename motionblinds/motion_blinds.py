@@ -28,8 +28,9 @@ DEVICE_TYPE_BLIND = "10000000"                  # Standard Blind
 DEVICE_TYPE_TDBU = "10000001"                   # Top Down Bottom Up
 DEVICE_TYPE_DR = "10000002"                     # Double Roller
 
+DEVICE_TYPE_WIFI_CURTAIN = "22000000"           # Curtain direct WiFi
 DEVICE_TYPE_WIFI_BLIND = "22000002"             # Standard Blind direct WiFi
-DEVICE_TYPES_WIFI = [DEVICE_TYPE_WIFI_BLIND]    # Direct WiFi devices
+DEVICE_TYPES_WIFI = [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]    # Direct WiFi devices
 
 DEVICE_TYPES_CONTROLLER = DEVICE_TYPES_GATEWAY + DEVICE_TYPES_WIFI
 
@@ -575,7 +576,7 @@ class MotionGateway(MotionCommunication):
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
                         gateway=self, mac=blind_mac, device_type=blind_type
                     )
-                elif blind_type in [DEVICE_TYPE_WIFI_BLIND]:
+                elif blind_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self, mac=blind_mac, device_type=blind_type
                     )
@@ -962,7 +963,7 @@ class MotionBlind:
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
-        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR, DEVICE_TYPE_WIFI_BLIND]:
+        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR, DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
                 self.mac,
