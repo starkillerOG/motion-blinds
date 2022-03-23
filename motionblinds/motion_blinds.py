@@ -98,6 +98,14 @@ class LimitStatus(IntEnum):
     Limit3 = 4
 
 
+class VoltageMode(IntEnum):
+    """Voltage mode of the blind."""
+
+    Unknown = -1
+    AC = 0
+    DC = 1
+
+
 class WirelessMode(IntEnum):
     """Wireless mode of the blind."""
 
@@ -832,6 +840,7 @@ class MotionBlind:
         self._device_type = device_type
         self._blind_type = None
         self._wireless_mode = None
+        self._voltage_mode = None
         self._max_angle = max_angle
 
         self._registered_callbacks = {}
@@ -856,24 +865,26 @@ class MotionBlind:
             )
 
         if self._wireless_mode == WirelessMode.BiDirectionLimits:
-            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
+            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>" % (
                 self.mac,
                 self.blind_type,
                 self.status,
                 self.limit_status,
+                self.voltage_name,
                 self.battery_level,
                 self.battery_voltage,
                 self.RSSI,
                 self.wireless_name,
             )
 
-        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s %%, %s V, RSSI: %s dBm, com: %s>" % (
+        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>" % (
             self.mac,
             self.blind_type,
             self.status,
             self.position,
             self.angle,
             self.limit_status,
+            self.voltage_name,
             self.battery_level,
             self.battery_voltage,
             self.RSSI,
@@ -1006,6 +1017,19 @@ class MotionBlind:
                     response["data"].get("wirelessMode"),
                 )
             self._wireless_mode = WirelessMode.Unknown
+
+        try:
+            self._voltage_mode = VoltageMode(response["data"]["voltageMode"])
+        except KeyError:
+            pass
+        except ValueError:
+            if self._voltage_mode != VoltageMode.Unknown:
+                _LOGGER.error(
+                    "Device with mac '%s' has voltage_mode '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                    self.mac,
+                    response["data"].get("voltageMode"),
+                )
+            self._voltage_mode = VoltageMode.Unknown
 
         # Check max angle
         if self._blind_type in [BlindType.ShangriLaBlind]:
@@ -1228,6 +1252,22 @@ class MotionBlind:
 
         self._parse_response(response)
 
+    def Jog_up(self):
+        """Open the blind/move the blind one step up."""
+        data = {"operation": 7}
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Jog_down(self):
+        """Close the blind/move the blind one step down."""
+        data = {"operation": 8}
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
     def Register_callback(self, id, callback):
         """Register a external callback function for updates of this blind."""
         if id in self._registered_callbacks:
@@ -1281,6 +1321,19 @@ class MotionBlind:
             return self._wireless_mode.name
 
         return self._wireless_mode
+
+    @property
+    def voltage_mode(self):
+        """Return the voltage mode of the blind as a VoltageMode enum."""
+        return self._voltage_mode
+
+    @property
+    def voltage_name(self):
+        """Return the voltage mode of the blind from VoltageMode enum as a string."""
+        if self._voltage_mode is not None:
+            return self._voltage_mode.name
+
+        return self._voltage_mode
 
     @property
     def mac(self):
@@ -1341,7 +1394,7 @@ class MotionTopDownBottomUp(MotionBlind):
 
     def __repr__(self):
         return (
-            "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s %%, %s V, RSSI: %s dBm>"
+            "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
             % (
                 self.mac,
                 self.blind_type,
@@ -1350,9 +1403,11 @@ class MotionTopDownBottomUp(MotionBlind):
                 self.scaled_position,
                 self.width,
                 self.limit_status,
+                self.voltage_name,
                 self.battery_level,
                 self.battery_voltage,
                 self.RSSI,
+                self.wireless_name,
             )
         )
 
@@ -1541,6 +1596,42 @@ class MotionTopDownBottomUp(MotionBlind):
             data = {"targetAngle_T": target_angle}
         elif motor == "C":
             data = {"targetAngle_B": target_angle, "targetAngle_T": target_angle}
+        else:
+            _LOGGER.error(
+                'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'
+            )
+            return
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Jog_up(self, motor: str = "B"):
+        """Open the blind/move the blind one step up."""
+        if motor == "B":
+            data = {"operation_B": 7}
+        elif motor == "T":
+            data = {"operation_T": 7}
+        elif motor == "C":
+            data = {"operation_B": 7, "operation_T": 7}
+        else:
+            _LOGGER.error(
+                'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'
+            )
+            return
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Jog_down(self, motor: str = "B"):
+        """Close the blind/move the blind one step down."""
+        if motor == "B":
+            data = {"operation_B": 8}
+        elif motor == "T":
+            data = {"operation_T": 8}
+        elif motor == "C":
+            data = {"operation_B": 8, "operation_T": 8}
         else:
             _LOGGER.error(
                 'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'

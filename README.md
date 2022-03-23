@@ -218,6 +218,8 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.Close()"                     | -            | -                | Close the blind/move the blind down                                                                                                                      |
 | "blind_1.Set_position(50)"            | postion      | int (0-100)      | Set the position of the blind                                                                                                                            |
 | "blind_1.Set_angle(90)"               | angle        | int (0-180)      | Set the angle/rotation of the blind                                                                                                                      |
+| "blind_1.Jog_up()"                    | -            | -                | Open the blind/move the blind one step up                                                                                                                |
+| "blind_1.Jog_down()"                  | -            | -                | Close the blind/move the blind one step down                                                                                                             |  
 | "blind_1.Register_callback("1", func) | id, callback | string, function | Register a external callback function for updates of the blind                                                                                           |
 | "blind_1.Remove_callback("1")         | id           | string           | Remove a external callback using its id                                                                                                                  |
 | "blind_1.Clear_callbacks()            | -            | -                | Remove all external registered callbacks for updates of the blind                                                                                        |
@@ -238,6 +240,8 @@ A blind device (that was asigned to variable 'blind_1') has the following method
 | "blind_1.RSSI"            | int        | Return the radio connection strength of the blind to the gateway in dBm             |
 | "blind_1.wireless_mode"   | enum       | Return the wireless mode of the blind as a WirelessMode enum                        |
 | "blind_1.wireless_name"   | string     | Return the wireless mode of the blind from WirelessMode enum                        |
+| "blind_1.voltage_mode"    | enum       | Return the voltage mode of the blind as a VoltageMode enum                          |
+| "blind_1.voltage_name"    | string     | Return the voltage mode of the blind from VoltageMode enum                          |
 
 ## Top Down Bottom Up (TDBU) device
 A TDBU blind device has two motors designated by "T" = Top and "B" = Bottom to control the two parts of the blind.
@@ -253,6 +257,8 @@ The TDBU device (that was asigned to variable 'blind_1') has the following metho
 | "blind_1.Set_position(50, motor = 'B', width = 20)" | position, motor, width | int (0-100), 'B', 'T' or 'C', int (0-100) | Set the position of the Bottom or Top motor of the blind, optionaly specify width       |
 | "blind_1.Set_scaled_position(50, motor = 'B')"      | position, motor        | int (0-100), 'B', 'T' or 'C'              | Set the position of the motor of the blind within the alowed space in which it can move |
 | "blind_1.Set_angle(90, motor = 'B')"                | angle, motor           | int (0-180), 'B', 'T' or 'C'              | Set the angle/rotation of the Bottom or Top motor of the blind                          |
+| "blind_1.Jog_up(motor = 'B')"                       | motor                  | 'B', 'T' or 'C'                           | Move the Bottom or Top motor of the blind one step up                                   |
+| "blind_1.Jog_down(motor = 'B')"                     | motor                  | 'B', 'T' or 'C'                           | Move the Bottom or Top motor of the blind one step down                                 | 
 | "blind_1.Register_callback("1", func)               | id, callback           | string, function                          | Register a external callback function for updates of the blind                          |
 | "blind_1.Remove_callback("1")                       | id                     | string                                    | Remove a external callback using its id                                                 |
 | "blind_1.Clear_callbacks()                          | -                      | -                                         | Remove all external registered callbacks for updates of the blind                       |
@@ -275,3 +281,5 @@ The TDBU device (that was asigned to variable 'blind_1') has the following metho
 | "blind_1.RSSI"            | int                                     | Return the radio connection strength of the blind to the gateway in dBm                                 |
 | "blind_1.wireless_mode"   | enum                                    | Return the wireless mode of the blind as a WirelessMode enum                                            |
 | "blind_1.wireless_name"   | string                                  | Return the wireless mode of the blind from WirelessMode enum                                            |
+| "blind_1.voltage_mode"    | enum                                    | Return the voltage mode of the blind as a VoltageMode enum                                              |
+| "blind_1.voltage_name"    | string                                  | Return the voltage mode of the blind from VoltageMode enum                                              |
