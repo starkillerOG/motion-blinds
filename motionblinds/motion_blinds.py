@@ -82,6 +82,8 @@ class BlindStatus(IntEnum):
     Stopped = 2
     StatusQuery = 5
     FirmwareBug = 6
+    JogUp = 7
+    JogDown = 8
 
 
 class LimitStatus(IntEnum):
