@@ -979,7 +979,12 @@ class MotionBlind:
         try:
             self._blind_type = BlindType(response["data"]["type"])
         except KeyError:
-            pass
+            if self._blind_type is None:
+                _LOGGER.info(
+                    "Device with mac '%s' has no blind_type in the status response, using the default 'RollerBlind' type.",
+                    self.mac,
+                )
+                self._blind_type = BlindType.RollerBlind
         except ValueError:
             if self._blind_type != BlindType.Unknown:
                 _LOGGER.error(
