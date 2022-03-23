@@ -985,7 +985,7 @@ class MotionBlind:
             )
 
         # update variables
-        self._mac = response["mac"]
+        self._mac = response.get("mac", self._mac)
         self._device_type = device_type
         try:
             self._blind_type = BlindType(response["data"]["type"])
@@ -1040,7 +1040,10 @@ class MotionBlind:
         if self._wireless_mode == WirelessMode.UniDirection:
             return True
 
-        self._RSSI = response["data"]["RSSI"]
+        try:
+            self._RSSI = response["data"]["RSSI"]
+        except KeyError:
+            pass
 
         return True
 
@@ -1093,14 +1096,14 @@ class MotionBlind:
 
             self._position = response["data"].get("currentPosition", 0)
             self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
-        except KeyError as ex:
+        except (KeyError, ValueError) as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
                 log_hide(response),
             )
             raise ParseException(
-                "Got an exception while parsing response: %s", response
+                "Got an exception while parsing response: %s", log_hide(response)
             ) from ex
 
     def _multicast_callback(self, message):
@@ -1392,6 +1395,19 @@ class MotionTopDownBottomUp(MotionBlind):
 
     QUERY_DATA = {"operation_T": 5, "operation_B": 5}
 
+    def __init__(
+        self,
+        gateway: MotionGateway = None,
+        mac: str = None,
+        device_type: str = None,
+        max_angle: int = 180,
+    ):
+        super().__init__(gateway, mac, device_type, max_angle)
+        self._position = {"T": 0, "B": 0, "C": 0}
+        self._battery_voltage = {"T": None, "B": None}
+        self._battery_level = {"T": None, "B": None}
+
+
     def __repr__(self):
         return (
             "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
@@ -1419,36 +1435,76 @@ class MotionTopDownBottomUp(MotionBlind):
                 return
 
             # handle specific properties
-            self._status = {
-                "T": BlindStatus(response["data"]["operation_T"]),
-                "B": BlindStatus(response["data"]["operation_B"]),
-            }
-            self._limit_status = {
-                "T": LimitStatus(response["data"]["currentState_T"]),
-                "B": LimitStatus(response["data"]["currentState_B"]),
-            }
-            pos_T = response["data"]["currentPosition_T"]
-            pos_B = response["data"]["currentPosition_B"]
+            try:
+                self._status = {
+                    "T": BlindStatus(response["data"]["operation_T"]),
+                    "B": BlindStatus(response["data"]["operation_B"]),
+                }
+            except KeyError:
+                self._status = {"T": BlindStatus.Unknown, "B": BlindStatus.Unknown}
+            except ValueError:
+                if self._status != {"T": BlindStatus.Unknown, "B": BlindStatus.Unknown}:
+                    _LOGGER.error(
+                        "Device with mac '%s' has status T: '%s', B: '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                        self.mac,
+                        response["data"].get("operation_T"),
+                        response["data"].get("operation_B"),
+                    )
+                self._status = {"T": BlindStatus.Unknown, "B": BlindStatus.Unknown}
+
+            try:
+                self._limit_status = {
+                    "T": LimitStatus(response["data"]["currentState_T"]),
+                    "B": LimitStatus(response["data"]["currentState_B"]),
+                }
+            except KeyError:
+                self._limit_status = {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}
+            except ValueError:
+                if self._limit_status != {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}:
+                    _LOGGER.error(
+                        "Device with mac '%s' has limit status T: '%s', B: '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
+                        self.mac,
+                        response["data"].get("currentState_T"),
+                        response["data"].get("currentState_B"),
+                    )
+                self._limit_status = {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}
+
+            try:
+                pos_T = response["data"]["currentPosition_T"]
+                pos_B = response["data"]["currentPosition_B"]
+            except KeyError:
+                _LOGGER.error(
+                    "Device with mac '%s' send status that did not include the position of the TDBU.",
+                    self.mac,
+                )
+                pos_T = self._position["T"]
+                pos_B = self._position["B"]
+
             pos_C = (pos_T + pos_B) / 2.0
             self._position = {"T": pos_T, "B": pos_B, "C": pos_C}
             self._angle = None
-            self._battery_voltage = {
-                "T": response["data"]["batteryLevel_T"] / 100.0,
-                "B": response["data"]["batteryLevel_B"] / 100.0,
-            }
+            
+            try:
+                self._battery_voltage = {
+                    "T": response["data"]["batteryLevel_T"] / 100.0,
+                    "B": response["data"]["batteryLevel_B"] / 100.0,
+                }
+            except KeyError:
+                self._battery_voltage = {"T": None, "B": None}
+            else:
+                self._battery_level = {
+                    "T": self._calculate_battery_level(self._battery_voltage["T"]),
+                    "B": self._calculate_battery_level(self._battery_voltage["B"]),
+                }
 
-            self._battery_level = {
-                "T": self._calculate_battery_level(self._battery_voltage["T"]),
-                "B": self._calculate_battery_level(self._battery_voltage["B"]),
-            }
-        except KeyError as ex:
+        except (KeyError, ValueError) as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
                 log_hide(response),
             )
             raise ParseException(
-                "Got an exception while parsing response: %s", response
+                "Got an exception while parsing response: %s", log_hide(response)
             ) from ex
 
     def Stop(self, motor: str = "B"):
