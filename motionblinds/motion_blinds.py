@@ -299,6 +299,16 @@ class MotionMulticast(MotionCommunication):
 
         _LOGGER.info("Listener stopped")
 
+    @property
+    def interface(self):
+        """Return the used interface."""
+        return self._interface
+
+    @property
+    def bind_interface(self):
+        """Return if the interface is bound."""
+        return self._bind_interface
+
     def Register_motion_gateway(self, ip, callback):
         """Register a Motion Gateway to this Multicast listener."""
         if ip in self._registered_callbacks:
@@ -382,6 +392,8 @@ class MotionGateway(MotionCommunication):
         self._RSSI = None
         self._protocol_version = None
         self._firmware_version = None
+
+        self._received_multicast_msg = False
 
         if self._multicast is not None:
             self._multicast.Register_motion_gateway(ip, self._multicast_callback)
@@ -716,6 +728,42 @@ class MotionGateway(MotionCommunication):
 
         # parse response
         self._parse_update_response(response)
+
+    def Check_gateway_multicast(self):
+        """Trigger a multicast message from the gateway by issuing a GetDeviceList over multicast and check if the response is received."""
+        if self._multicast is None:
+            _LOGGER.error(
+                "Trigger_gateway_multicast requires a MotionMulticast to be supplied during initialization"
+            )
+            return
+
+        self._received_multicast_msg = False
+        def check_multicast_callback():
+            self._received_multicast_msg = True
+
+        self.Register_callback("Check_gateway_multicast", check_multicast_callback)
+
+        mcastsocket = self._create_mcast_socket(self._multicast.interface, self._multicast.bind_interface)
+        mcastsocket.settimeout(self._timeout)
+
+        msg = {"msgType": "GetDeviceList", "msgID": self._get_timestamp()}
+        mcastsocket.sendto(
+            bytes(json.dumps(msg), "utf-8"), (MULTICAST_ADDRESS, UDP_PORT_SEND)
+        )
+        
+        mcastsocket.close()
+        
+        # Wait untill callback received
+        start = datetime.datetime.utcnow()
+        while True:
+            if self._received_multicast_msg:
+                break
+            time_past = datetime.datetime.utcnow() - start
+            if time_past.total_seconds() > self._mcast_timeout:
+                break
+        
+        self.Remove_callback("Check_gateway_multicast")
+        return self._received_multicast_msg
 
     def Register_callback(self, id, callback):
         """Register a external callback function for updates of the gateway."""

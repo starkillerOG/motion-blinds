@@ -40,6 +40,16 @@ class AsyncMotionMulticast(MotionCommunication):
             sock=udp_socket,
         )
 
+    @property
+    def interface(self):
+        """Return the used interface."""
+        return self._interface
+
+    @property
+    def bind_interface(self):
+        """Return if the interface is bound."""
+        return self._bind_interface
+
     def Register_motion_gateway(self, ip, callback):
         """Register a Motion Gateway to this Multicast listener."""
         if ip in self._registered_callbacks:
