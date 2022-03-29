@@ -187,6 +187,7 @@ A gateway device (that was asigned to variable 'm') has the following methods an
 | ------------------------------- | ------------ | ---------------- | ---------------------------------------------------------------------------------- |
 | "m.GetDeviceList()"             | -            | -                | Get the device list from the Motion Gateway and update the properties listed below |
 | "m.Update()"                    | -            | -                | Get the status of the Motion Gateway and update the properties listed below        |
+| "m.Check_gateway_multicast()"   | -            | -                | Check if multicast messages can be received with the configured multicast listener |
 | "m.Register_callback("1", func) | id, callback | string, function | Register a external callback function for updates of the gateway                   |
 | "m.Remove_callback("1")         | id           | string           | Remove a external callback using its id                                            |
 | "m.Clear_callbacks()            | -            | -                | Remove all external registered callbacks for updates of the gateway                |
