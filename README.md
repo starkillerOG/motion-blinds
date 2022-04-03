@@ -4,6 +4,8 @@ Python library for interfacing with Motion Blinds
 This library allows you to control Motion Blinds from Coulisse B.V.
 This library is primarly writen to be used with HomeAssistant but can also be used stand alone.
 
+[![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/starkillerOG)
+
 For products see https://motion-blinds.com or https://coulisse.com/products/motion.
 
 Shops that sell these blinds:
