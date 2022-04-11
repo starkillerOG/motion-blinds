@@ -59,6 +59,11 @@ class AsyncMotionMulticast(MotionCommunication):
             )
         self._registered_callbacks[ip] = callback
 
+    def Unregister_motion_gateway(self, ip):
+        """Unregister a Motion Gateway from this Multicast listener."""
+        if ip in self._registered_callbacks:
+            self._registered_callbacks.pop(ip)
+
     async def Start_listen(self):
         """Start listening."""
         if self._listen_couroutine is not None:
