@@ -23,7 +23,7 @@ The following brands have been reported to also work with this python library:
 - [Smart Home](https://www.smart-home.hu)
 - [Hurrican Shutters Wholesale](https://www.hurricaneshutterswholesale.com/)
 - [iSmartWindow](https://www.ismartwindow.co.nz/)
-- [Raven Rock MRG](https://www.ravenrockmfg.com/)
+- [Raven Rock MFG](https://www.ravenrockmfg.com/)
 - [AMP Motorization](https://www.ampmotorization.com/)
 - [Uprise Smart Shades](http://uprisesmartshades.com)
 - [Bliss Automation - Alta Window Fashions](https://www.altawindowfashions.com/product/automation/bliss-automation/)
