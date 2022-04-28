@@ -29,6 +29,7 @@ The following brands have been reported to also work with this python library:
 - [Bliss Automation - Alta Window Fashions](https://www.altawindowfashions.com/product/automation/bliss-automation/)
 - [3 Day Blinds](https://www.3dayblinds.com/)
 - [Martec](https://www.martec.co.nz/)
+- [Gaviota](https://www.gaviotagroup.com/en/)
 
 ## Installation
 
