@@ -1281,15 +1281,23 @@ class MotionBlind:
 
         self._parse_response(response)
 
-    def Set_position(self, position):
+    def Set_position(self, position, angle = None, restore_angle = False):
         """
         Set the position of the blind.
+        Optionally also set angle or restore current angle.
         
         position is in %, so 0-100
         0 = open
         100 = closed
+        angle is in degrees, so 0-180
         """
         data = {"targetPosition": position}
+        if angle is not None:
+            target_angle = round(angle * self._max_angle / 180.0, 0)
+            data["targetAngle"] = target_angle
+        if restore_angle and self.angle is not None:
+            target_angle = round(self.angle * self._max_angle / 180.0, 0)
+            data["targetAngle"] = target_angle
 
         response = self._write(data)
 
