@@ -1293,11 +1293,11 @@ class MotionBlind:
         angle is in degrees, so 0-180
         """
         data = {"targetPosition": position}
-        if angle is not None:
-            target_angle = round(angle * self._max_angle / 180.0, 0)
-            data["targetAngle"] = target_angle
         if restore_angle and self.angle is not None and position != 0:
             target_angle = round(self.angle * self._max_angle / 180.0, 0)
+            data["targetAngle"] = target_angle
+        if angle is not None:
+            target_angle = round(angle * self._max_angle / 180.0, 0)
             data["targetAngle"] = target_angle
 
         response = self._write(data)
