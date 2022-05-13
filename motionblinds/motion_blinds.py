@@ -749,15 +749,16 @@ class MotionGateway(MotionCommunication):
 
         self.Register_callback("Check_gateway_multicast", check_multicast_callback)
 
-        mcastsocket = self._create_mcast_socket(self._multicast.interface, self._multicast.bind_interface)
-        mcastsocket.settimeout(self._timeout)
+        # Check if device_list is not empty
+        if not self.device_list:
+            _LOGGER.debug(
+                "Device list not yet retrieved, first executing GetDeviceList to obtain it before continuing with Check_gateway_multicast."
+            )
+            self.GetDeviceList()
 
-        msg = {"msgType": "GetDeviceList", "msgID": self._get_timestamp()}
-        mcastsocket.sendto(
-            bytes(json.dumps(msg), "utf-8"), (MULTICAST_ADDRESS, UDP_PORT_SEND)
-        )
-        
-        mcastsocket.close()
+        # Trigger multicast messages
+        for blind in self.device_list.values():
+            blind.Update_trigger()
         
         # Wait untill callback received
         start = datetime.datetime.utcnow()
