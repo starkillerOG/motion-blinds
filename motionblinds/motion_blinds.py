@@ -758,6 +758,7 @@ class MotionGateway(MotionCommunication):
 
         # Trigger multicast messages
         for blind in self.device_list.values():
+            blind.Register_callback("Check_blind_multicast", check_multicast_callback)
             blind.Update_trigger()
         
         # Wait untill callback received
@@ -770,6 +771,8 @@ class MotionGateway(MotionCommunication):
                 break
         
         self.Remove_callback("Check_gateway_multicast")
+        for blind in self.device_list.values():
+            blind.Remove_callback("Check_blind_multicast")
         return self._received_multicast_msg
 
     def Register_callback(self, id, callback):
