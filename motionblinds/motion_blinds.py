@@ -906,6 +906,7 @@ class MotionBlind:
         self._limit_status = None
         self._position = None
         self._angle = None
+        self._restore_angle = None
         self._battery_voltage = None
         self._battery_level = None
         self._RSSI = None
@@ -1151,6 +1152,8 @@ class MotionBlind:
 
             self._position = response["data"].get("currentPosition", 0)
             self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
+            if self._angle != 0:
+                self._restore_angle = self._angle
         except (KeyError, ValueError) as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
@@ -1293,8 +1296,8 @@ class MotionBlind:
         angle is in degrees, so 0-180
         """
         data = {"targetPosition": position}
-        if restore_angle and self.angle is not None and position != 0:
-            target_angle = round(self.angle * self._max_angle / 180.0, 0)
+        if restore_angle and self._restore_angle is not None and position != 0:
+            target_angle = round(self._restore_angle * self._max_angle / 180.0, 0)
             data["targetAngle"] = target_angle
         if angle is not None:
             target_angle = round(angle * self._max_angle / 180.0, 0)
