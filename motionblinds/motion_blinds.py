@@ -68,6 +68,7 @@ class BlindType(IntEnum):
     CurtainRight = 14
     DoubleRoller = 17
     VerticalBlindLeft = 21
+    WoodShutter = 22
     SkylightBlind = 26
     DualShade = 27
     VerticalBlind = 28
@@ -561,12 +562,12 @@ class MotionGateway(MotionCommunication):
     def _parse_device_list_response(self, response):
         """Parse the response to a device list update of the gateway"""
 
-        # check device_type
-        device_type = response.get("deviceType", self._device_type)
-        if device_type not in DEVICE_TYPES_CONTROLLER:
+        # check device_type of the gateway
+        gw_device_type = response.get("deviceType", self._device_type)
+        if gw_device_type not in DEVICE_TYPES_CONTROLLER:
             _LOGGER.warning(
                 "DeviceType %s does not correspond to a gateway or WiFi blind in GetDeviceList function.",
-                device_type,
+                gw_device_type,
             )
 
         # check for token change
@@ -576,7 +577,7 @@ class MotionGateway(MotionCommunication):
 
         # update variables
         self._gateway_mac = response["mac"]
-        self._device_type = device_type
+        self._device_type = gw_device_type
         self._protocol_version = response["ProtocolVersion"]
         self._firmware_version = response.get("fwVersion")
         self._token = response["token"]
@@ -587,33 +588,33 @@ class MotionGateway(MotionCommunication):
 
         # add the discovered blinds to the device list.
         for blind in response["data"]:
-            blind_type = blind["deviceType"]
-            if blind_type not in DEVICE_TYPES_GATEWAY:
+            device_type = blind["deviceType"]
+            if device_type not in DEVICE_TYPES_GATEWAY:
                 blind_mac = blind["mac"]
-                if blind_type in [DEVICE_TYPE_BLIND]:
+                if device_type in [DEVICE_TYPE_BLIND]:
                     self._device_list[blind_mac] = MotionBlind(
-                        gateway=self, mac=blind_mac, device_type=blind_type
+                        gateway=self, mac=blind_mac, device_type=device_type
                     )
-                elif blind_type in [DEVICE_TYPE_DR]:
+                elif device_type in [DEVICE_TYPE_DR]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self,
                         mac=blind_mac,
-                        device_type=blind_type,
+                        device_type=device_type,
                         max_angle=90,
                     )
-                elif blind_type in [DEVICE_TYPE_TDBU]:
+                elif device_type in [DEVICE_TYPE_TDBU]:
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
-                        gateway=self, mac=blind_mac, device_type=blind_type
+                        gateway=self, mac=blind_mac, device_type=device_type
                     )
-                elif blind_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
+                elif device_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
                     self._device_list[blind_mac] = MotionBlind(
-                        gateway=self, mac=blind_mac, device_type=blind_type
+                        gateway=self, mac=blind_mac, device_type=device_type
                     )
                 else:
                     _LOGGER.warning(
                         "Device with mac '%s' has DeviceType '%s' that does not correspond to a gateway or known blind.",
                         blind_mac,
-                        blind_type,
+                        device_type,
                     )
 
     def _multicast_callback(self, message):
