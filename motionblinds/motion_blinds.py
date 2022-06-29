@@ -122,16 +122,18 @@ def log_hide(message):
     """Hide security sensitive information from log messages"""
     from re import compile, sub
 
-    if type(message) != dict:
-        return message
+    mess_copy = message.copy()
+
+    if type(mess_copy) != dict:
+        return mess_copy
 
     hide_pattern = compile("[a-zA-Z0-9]")
-    if "token" in message:
-        message["token"] = sub(hide_pattern, "x", message["token"])
-    if "AccessToken" in message:
-        message["AccessToken"] = sub(hide_pattern, "x", message["AccessToken"])
+    if "token" in mess_copy:
+        mess_copy["token"] = sub(hide_pattern, "x", mess_copy["token"])
+    if "AccessToken" in mess_copy:
+        mess_copy["AccessToken"] = sub(hide_pattern, "x", mess_copy["AccessToken"])
 
-    return message
+    return mess_copy
 
 
 class MotionCommunication:
