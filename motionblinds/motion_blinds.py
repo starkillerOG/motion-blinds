@@ -507,6 +507,12 @@ class MotionGateway(MotionCommunication):
                     log_hide(message),
                     log_hide(response),
                 )
+                if response.get("token") is not None:
+                    # check for token change
+                    if self._token != response["token"]:
+                        _LOGGER.warning("Gateway token has changed from actionResult.")
+                        self._token = response["token"]
+                        self._access_token = None
 
         if single_response:
             return responses[0]
