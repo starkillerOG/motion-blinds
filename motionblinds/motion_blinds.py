@@ -1036,11 +1036,14 @@ class MotionBlind:
             # 3 cel battery pack (12.6V)
             return round((voltage - 10.4) * 100 / (12.6 - 10.4), 0)
 
-        if voltage > 13.6:
+        if voltage > 13.6 and voltage <= 19.0:
             # 4 cel battery pack (16.8V)
             return round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
 
-        return 0.0
+        if voltage <= 0.0:
+            return 0.0
+
+        return 200.0
 
     def _parse_response_common(self, response):
         """Parse the common part of a response form the blind."""
@@ -1165,6 +1168,13 @@ class MotionBlind:
                 self._battery_voltage = None
             else:
                 self._battery_level = self._calculate_battery_level(self._battery_voltage)
+                if self._battery_level <= 0.0 or self._battery_level >= 200.0:
+                    _LOGGER.warning(
+                        "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
+                        self.mac,
+                        self._battery_voltage,
+                        response["data"]["batteryLevel"],
+                    )
 
             if self._wireless_mode == WirelessMode.BiDirectionLimits:
                 return
@@ -1581,6 +1591,14 @@ class MotionTopDownBottomUp(MotionBlind):
                     "T": self._calculate_battery_level(self._battery_voltage["T"]),
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
+                if self._battery_level["T"] <= 0.0 or self._battery_level["T"] >= 200.0 or self._battery_level["B"] <= 0.0 or self._battery_level["B"] >= 200.0:
+                    _LOGGER.warning(
+                        "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
+                        self.mac,
+                        self._battery_voltage,
+                        response["data"]["batteryLevel_T"],
+                        response["data"]["batteryLevel_B"],
+                    )
 
         except (KeyError, ValueError) as ex:
             _LOGGER.exception(
