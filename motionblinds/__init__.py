@@ -8,11 +8,6 @@ Python library for interfacing with Motion Blinds.
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
 
-logging.getLogger(__name__)
-
-__title__ = "motion-blinds"
-__version__ = "0.6.11"
-
 # Import motion_blinds module
 from .motion_blinds import MotionGateway
 from .motion_blinds import MotionMulticast
@@ -27,3 +22,8 @@ from .async_motion_blinds import AsyncMotionMulticast
 # Import constants
 from .motion_blinds import DEVICE_TYPES_GATEWAY
 from .motion_blinds import DEVICE_TYPES_WIFI
+
+logging.getLogger(__name__)
+
+__title__ = "motion-blinds"
+__version__ = "0.6.11"

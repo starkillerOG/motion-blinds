@@ -23,14 +23,17 @@ UDP_PORT_RECEIVE = 32101
 SOCKET_BUFSIZE = 4096
 MAX_RESPONSE_LENGTH = 1024
 
-DEVICE_TYPES_GATEWAY = ["02000001", "02000002"] # Gateway
-DEVICE_TYPE_BLIND = "10000000"                  # Standard Blind
-DEVICE_TYPE_TDBU = "10000001"                   # Top Down Bottom Up
-DEVICE_TYPE_DR = "10000002"                     # Double Roller
+DEVICE_TYPES_GATEWAY = ["02000001", "02000002"]  # Gateway
+DEVICE_TYPE_BLIND = "10000000"  # Standard Blind
+DEVICE_TYPE_TDBU = "10000001"  # Top Down Bottom Up
+DEVICE_TYPE_DR = "10000002"  # Double Roller
 
-DEVICE_TYPE_WIFI_CURTAIN = "22000000"           # Curtain direct WiFi
-DEVICE_TYPE_WIFI_BLIND = "22000002"             # Standard Blind direct WiFi
-DEVICE_TYPES_WIFI = [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]    # Direct WiFi devices
+DEVICE_TYPE_WIFI_CURTAIN = "22000000"  # Curtain direct WiFi
+DEVICE_TYPE_WIFI_BLIND = "22000002"  # Standard Blind direct WiFi
+DEVICE_TYPES_WIFI = [
+    DEVICE_TYPE_WIFI_BLIND,
+    DEVICE_TYPE_WIFI_CURTAIN,
+]  # Direct WiFi devices
 
 DEVICE_TYPES_CONTROLLER = DEVICE_TYPES_GATEWAY + DEVICE_TYPES_WIFI
 
@@ -175,14 +178,18 @@ class MotionCommunication:
 
         try:
             udp_socket.setsockopt(
-                socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq,
+                socket.IPPROTO_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                mreq,
             )
         except:
             _LOGGER.error(
                 "Error adding multicast socket membership using IPPROTO_IP, trying SOL_IP"
             )
             udp_socket.setsockopt(
-                socket.SOL_IP, socket.IP_ADD_MEMBERSHIP, mreq,
+                socket.SOL_IP,
+                socket.IP_ADD_MEMBERSHIP,
+                mreq,
             )
 
         udp_socket.bind((interface if bind_interface else "", UDP_PORT_RECEIVE))
@@ -338,9 +345,12 @@ class MotionMulticast(MotionCommunication):
         self._listening = True
 
         if self._mcastsocket is None:
-            _LOGGER.info('Creating multicast socket')
-            self._mcastsocket = self._create_mcast_socket(self._interface, self._bind_interface)
-            self._mcastsocket.settimeout(2.0)  # ensure you can exit the _listen_to_msg loop
+            _LOGGER.info("Creating multicast socket")
+            self._mcastsocket = self._create_mcast_socket(
+                self._interface, self._bind_interface
+            )
+            # ensure you can exit the _listen_to_msg loop
+            self._mcastsocket.settimeout(2.0)
         else:
             _LOGGER.error("Multicast socket was already created.")
 
@@ -408,14 +418,17 @@ class MotionGateway(MotionCommunication):
             self._multicast.Register_motion_gateway(ip, self._multicast_callback)
 
     def __repr__(self):
-        return "<MotionGateway ip: %s, mac: %s, protocol: %s, firmware: %s, N_devices: %s, status: %s, RSSI: %s dBm>" % (
-            self._ip,
-            self.mac,
-            self.protocol,
-            self.firmware,
-            self.N_devices,
-            self.status,
-            self.RSSI,
+        return (
+            "<MotionGateway ip: %s, mac: %s, protocol: %s, firmware: %s, N_devices: %s, status: %s, RSSI: %s dBm>"
+            % (
+                self._ip,
+                self.mac,
+                self.protocol,
+                self.firmware,
+                self.N_devices,
+                self.status,
+                self.RSSI,
+            )
         )
 
     def _get_access_token(self):
@@ -440,7 +453,7 @@ class MotionGateway(MotionCommunication):
 
         return self._access_token
 
-    def _send(self, message, single_response = True):
+    def _send(self, message, single_response=True):
         """Send a command to the Motion Gateway."""
         attempt = 1
         data = []
@@ -455,7 +468,7 @@ class MotionGateway(MotionCommunication):
                     single_data, addr = s.recvfrom(SOCKET_BUFSIZE)
                     data.append(single_data)
 
-                    if len(single_data) < int(0.9*MAX_RESPONSE_LENGTH):
+                    if len(single_data) < int(0.9 * MAX_RESPONSE_LENGTH):
                         break
 
                     s.settimeout(self._multi_resp_timeout)
@@ -465,7 +478,7 @@ class MotionGateway(MotionCommunication):
                             "Response of length %i>%i received, while only expecting single response,"
                             " while sending message '%s', got response: '%s'",
                             len(single_data),
-                            int(0.9*MAX_RESPONSE_LENGTH),
+                            int(0.9 * MAX_RESPONSE_LENGTH),
                             log_hide(message),
                             log_hide(json.loads(single_data)),
                         )
@@ -563,7 +576,9 @@ class MotionGateway(MotionCommunication):
         self._available = True
         data = response.get("data")
         if data:
-            self._status = GatewayStatus(data.get("currentState", GatewayStatus.Unknown))
+            self._status = GatewayStatus(
+                data.get("currentState", GatewayStatus.Unknown)
+            )
             self._N_devices = data.get("numberOfDevices", 0)
             self._RSSI = data.get("RSSI")
 
@@ -690,7 +705,7 @@ class MotionGateway(MotionCommunication):
         msg = {"msgType": "GetDeviceList", "msgID": self._get_timestamp()}
 
         try:
-            responses = self._send(msg, single_response = False)
+            responses = self._send(msg, single_response=False)
         except socket.timeout:
             for blind in self.device_list.values():
                 blind._available = False
@@ -742,7 +757,8 @@ class MotionGateway(MotionCommunication):
         msgType = response.get("msgType")
         if msgType != "ReadDeviceAck":
             _LOGGER.error(
-                "Response to Update is not a ReadDeviceAck but '%s'.", msgType,
+                "Response to Update is not a ReadDeviceAck but '%s'.",
+                msgType,
             )
             return
 
@@ -758,6 +774,7 @@ class MotionGateway(MotionCommunication):
             return
 
         self._received_multicast_msg = False
+
         def check_multicast_callback():
             self._received_multicast_msg = True
 
@@ -776,7 +793,7 @@ class MotionGateway(MotionCommunication):
         # Trigger multicast messages
         for blind in self.device_list.values():
             blind.Update_trigger()
-        
+
         # Wait untill callback received
         start = datetime.datetime.utcnow()
         while True:
@@ -785,7 +802,7 @@ class MotionGateway(MotionCommunication):
             time_past = datetime.datetime.utcnow() - start
             if time_past.total_seconds() > self._mcast_timeout:
                 break
-        
+
         self.Remove_callback("Check_gateway_multicast")
         for blind in self.device_list.values():
             blind.Remove_callback("Check_blind_multicast")
@@ -891,7 +908,7 @@ class MotionGateway(MotionCommunication):
     def device_list(self):
         """
         Return a dict containing all blinds connected to the gateway.
-        
+
         The keys in the dict are the mac adresses of the blinds.
         """
         return self._device_list
@@ -940,10 +957,29 @@ class MotionBlind:
             )
 
         if self._wireless_mode == WirelessMode.BiDirectionLimits:
-            return "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>" % (
+            return (
+                "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
+                % (
+                    self.mac,
+                    self.blind_type,
+                    self.status,
+                    self.limit_status,
+                    self.voltage_name,
+                    self.battery_level,
+                    self.battery_voltage,
+                    self.RSSI,
+                    self.wireless_name,
+                )
+            )
+
+        return (
+            "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
+            % (
                 self.mac,
                 self.blind_type,
                 self.status,
+                self.position,
+                self.angle,
                 self.limit_status,
                 self.voltage_name,
                 self.battery_level,
@@ -951,19 +987,6 @@ class MotionBlind:
                 self.RSSI,
                 self.wireless_name,
             )
-
-        return "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>" % (
-            self.mac,
-            self.blind_type,
-            self.status,
-            self.position,
-            self.angle,
-            self.limit_status,
-            self.voltage_name,
-            self.battery_level,
-            self.battery_voltage,
-            self.RSSI,
-            self.wireless_name,
         )
 
     def _write(self, data):
@@ -975,7 +998,8 @@ class MotionBlind:
         msgType = response.get("msgType")
         if msgType != "WriteDeviceAck":
             _LOGGER.error(
-                "Response to Write is not a WriteDeviceAck but '%s'.", msgType,
+                "Response to Write is not a WriteDeviceAck but '%s'.",
+                msgType,
             )
 
         return response
@@ -1055,7 +1079,13 @@ class MotionBlind:
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
-        if device_type not in [DEVICE_TYPE_BLIND, DEVICE_TYPE_TDBU, DEVICE_TYPE_DR, DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
+        if device_type not in [
+            DEVICE_TYPE_BLIND,
+            DEVICE_TYPE_TDBU,
+            DEVICE_TYPE_DR,
+            DEVICE_TYPE_WIFI_BLIND,
+            DEVICE_TYPE_WIFI_CURTAIN,
+        ]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
                 self.mac,
@@ -1167,7 +1197,9 @@ class MotionBlind:
             except KeyError:
                 self._battery_voltage = None
             else:
-                self._battery_level = self._calculate_battery_level(self._battery_voltage)
+                self._battery_level = self._calculate_battery_level(
+                    self._battery_voltage
+                )
                 if self._battery_level <= 0.0 or self._battery_level >= 200.0:
                     _LOGGER.warning(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
@@ -1180,7 +1212,9 @@ class MotionBlind:
                 return
 
             self._position = response["data"].get("currentPosition", 0)
-            self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
+            self._angle = response["data"].get("currentAngle", 0) * (
+                180.0 / self._max_angle
+            )
             if self._angle != 0:
                 self._restore_angle = self._angle
         except (KeyError, ValueError) as ex:
@@ -1215,7 +1249,8 @@ class MotionBlind:
         msgType = response.get("msgType")
         if msgType != "ReadDeviceAck":
             _LOGGER.error(
-                "Response to Update is not a ReadDeviceAck but '%s'.", msgType,
+                "Response to Update is not a ReadDeviceAck but '%s'.",
+                msgType,
             )
             return
 
@@ -1314,11 +1349,11 @@ class MotionBlind:
 
         self._parse_response(response)
 
-    def Set_position(self, position, angle = None, restore_angle = False):
+    def Set_position(self, position, angle=None, restore_angle=False):
         """
         Set the position of the blind.
         Optionally also set angle or restore current angle.
-        
+
         position is in %, so 0-100
         0 = open
         100 = closed
@@ -1339,7 +1374,7 @@ class MotionBlind:
     def Set_angle(self, angle):
         """
         Set the angle/rotation of the blind.
-        
+
         angle is in degrees, so 0-180
         """
         target_angle = round(angle * self._max_angle / 180.0, 0)
@@ -1502,7 +1537,6 @@ class MotionTopDownBottomUp(MotionBlind):
         self._battery_voltage = {"T": None, "B": None}
         self._battery_level = {"T": None, "B": None}
 
-
     def __repr__(self):
         return (
             "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
@@ -1553,16 +1587,25 @@ class MotionTopDownBottomUp(MotionBlind):
                     "B": LimitStatus(response["data"]["currentState_B"]),
                 }
             except KeyError:
-                self._limit_status = {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}
+                self._limit_status = {
+                    "T": LimitStatus.Unknown,
+                    "B": LimitStatus.Unknown,
+                }
             except ValueError:
-                if self._limit_status != {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}:
+                if self._limit_status != {
+                    "T": LimitStatus.Unknown,
+                    "B": LimitStatus.Unknown,
+                }:
                     _LOGGER.error(
                         "Device with mac '%s' has limit status T: '%s', B: '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
                         self.mac,
                         response["data"].get("currentState_T"),
                         response["data"].get("currentState_B"),
                     )
-                self._limit_status = {"T": LimitStatus.Unknown, "B": LimitStatus.Unknown}
+                self._limit_status = {
+                    "T": LimitStatus.Unknown,
+                    "B": LimitStatus.Unknown,
+                }
 
             try:
                 pos_T = response["data"]["currentPosition_T"]
@@ -1578,7 +1621,7 @@ class MotionTopDownBottomUp(MotionBlind):
             pos_C = (pos_T + pos_B) / 2.0
             self._position = {"T": pos_T, "B": pos_B, "C": pos_C}
             self._angle = None
-            
+
             try:
                 self._battery_voltage = {
                     "T": response["data"]["batteryLevel_T"] / 100.0,
@@ -1591,7 +1634,12 @@ class MotionTopDownBottomUp(MotionBlind):
                     "T": self._calculate_battery_level(self._battery_voltage["T"]),
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
-                if self._battery_level["T"] <= 0.0 or self._battery_level["T"] >= 200.0 or self._battery_level["B"] <= 0.0 or self._battery_level["B"] >= 200.0:
+                if (
+                    self._battery_level["T"] <= 0.0
+                    or self._battery_level["T"] >= 200.0
+                    or self._battery_level["B"] <= 0.0
+                    or self._battery_level["B"] >= 200.0
+                ):
                     _LOGGER.warning(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
                         self.mac,
@@ -1667,7 +1715,7 @@ class MotionTopDownBottomUp(MotionBlind):
     def Set_position(self, position, motor: str = "B", width: int = None):
         """
         Set the position of the blind.
-        
+
         position is in %, so 0-100
         0 = open
         100 = closed
@@ -1717,7 +1765,7 @@ class MotionTopDownBottomUp(MotionBlind):
     def Set_scaled_position(self, scaled_position, motor: str = "B"):
         """
         Set the scaled position of the blind.
-        
+
         scaled_position is in %, so 0-100
         for top blind:
             0 = open
@@ -1727,13 +1775,18 @@ class MotionTopDownBottomUp(MotionBlind):
             100 = closed
         """
         if motor == "B":
-            pos_bottom = self._position["T"] + (100.0 - self._position["T"])*scaled_position/100.0
+            pos_bottom = (
+                self._position["T"]
+                + (100.0 - self._position["T"]) * scaled_position / 100.0
+            )
             return self.Set_position(pos_bottom, motor)
         elif motor == "T":
             pos_top = scaled_position * self._position["B"] / 100.0
             return self.Set_position(pos_top, motor)
         elif motor == "C":
-            pos_combined = self.width/2.0 + scaled_position*(100.0 - self.width)/100.0
+            pos_combined = (
+                self.width / 2.0 + scaled_position * (100.0 - self.width) / 100.0
+            )
             return self.Set_position(pos_combined, motor)
         else:
             _LOGGER.error(
@@ -1744,7 +1797,7 @@ class MotionTopDownBottomUp(MotionBlind):
     def Set_angle(self, angle, motor: str = "B"):
         """
         Set the angle/rotation of the blind.
-        
+
         angle is in degrees, so 0-180
         """
         target_angle = round(angle * self._max_angle / 180.0, 0)
@@ -1815,12 +1868,20 @@ class MotionTopDownBottomUp(MotionBlind):
             pos_top = 0
 
         if self._position["T"] < 100:
-            pos_bottom = round((self._position["B"] - self._position["T"])*100.0/(100.0 - self._position["T"]), 1)
+            pos_bottom = round(
+                (self._position["B"] - self._position["T"])
+                * 100.0
+                / (100.0 - self._position["T"]),
+                1,
+            )
         else:
             pos_bottom = 100
 
         if self.width < 100:
-            pos_combined = round((self._position["C"] - self.width/2.0)*100.0/(100.0 - self.width), 1)
+            pos_combined = round(
+                (self._position["C"] - self.width / 2.0) * 100.0 / (100.0 - self.width),
+                1,
+            )
         else:
             pos_combined = 100
 
@@ -1843,6 +1904,9 @@ class MotionTopDownBottomUp(MotionBlind):
     def limit_status(self):
         """Return the current status of the limit detection of the blind from LimitStatus enum."""
         if self._limit_status is not None:
-            return {"T": self._limit_status["T"].name, "B": self._limit_status["B"].name}
+            return {
+                "T": self._limit_status["T"].name,
+                "B": self._limit_status["B"].name,
+            }
 
         return self._limit_status
