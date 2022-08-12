@@ -1176,9 +1176,7 @@ class MotionBlind:
                 return
 
             self._position = response["data"].get("currentPosition", 0)
-            self._angle = response["data"].get("currentAngle", 0) * (
-                180.0 / self._max_angle
-            )
+            self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
             if self._angle != 0:
                 self._restore_angle = self._angle
         except (KeyError, ValueError) as ex:
@@ -1587,10 +1585,8 @@ class MotionTopDownBottomUp(MotionBlind):
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
                 if (
-                    self._battery_level["T"] <= 0.0
-                    or self._battery_level["T"] >= 200.0
-                    or self._battery_level["B"] <= 0.0
-                    or self._battery_level["B"] >= 200.0
+                    0.0 >= self._battery_level["T"] >= 200.0
+                    or 0.0 >= self._battery_level["B"] >= 200.0
                 ):
                     _LOGGER.warning(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
@@ -1727,10 +1723,7 @@ class MotionTopDownBottomUp(MotionBlind):
             100 = closed
         """
         if motor == "B":
-            pos_bottom = (
-                self._position["T"]
-                + (100.0 - self._position["T"]) * scaled_position / 100.0
-            )
+            pos_bottom = self._position["T"] + (100.0 - self._position["T"]) * scaled_position / 100.0
             self.Set_position(pos_bottom, motor)
             return
         if motor == "T":
@@ -1738,9 +1731,7 @@ class MotionTopDownBottomUp(MotionBlind):
             self.Set_position(pos_top, motor)
             return
         if motor == "C":
-            pos_combined = (
-                self.width / 2.0 + scaled_position * (100.0 - self.width) / 100.0
-            )
+            pos_combined = self.width / 2.0 + scaled_position * (100.0 - self.width) / 100.0
             self.Set_position(pos_combined, motor)
             return
 
@@ -1824,9 +1815,7 @@ class MotionTopDownBottomUp(MotionBlind):
 
         if self._position["T"] < 100:
             pos_bottom = round(
-                (self._position["B"] - self._position["T"])
-                * 100.0
-                / (100.0 - self._position["T"]),
+                (self._position["B"] - self._position["T"])* 100.0 / (100.0 - self._position["T"]),
                 1,
             )
         else:
