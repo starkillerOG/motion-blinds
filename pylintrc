@@ -8,6 +8,7 @@ disable=
   broad-except,
   bare-except,
   abstract-method,
+  no-self-use,
   duplicate-code,
   too-few-public-methods,
   too-many-arguments,
