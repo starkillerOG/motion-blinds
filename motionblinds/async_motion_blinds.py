@@ -7,12 +7,10 @@ This module implements the async interface to Motion Blinds.
 
 
 import logging
-import socket
 import json
-import struct
 import asyncio
 
-from .motion_blinds import MULTICAST_ADDRESS, UDP_PORT_RECEIVE, MotionCommunication
+from .motion_blinds import MotionCommunication
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ class AsyncMotionMulticast(MotionCommunication):
         self._interface = interface
         self._bind_interface = bind_interface
 
-        self._registered_callbacks = {}
+        self.registered_callbacks = {}
 
     def _create_udp_listener(self):
         """Create the UDP multicast socket and protocol."""
@@ -52,17 +50,17 @@ class AsyncMotionMulticast(MotionCommunication):
 
     def Register_motion_gateway(self, ip, callback):
         """Register a Motion Gateway to this Multicast listener."""
-        if ip in self._registered_callbacks:
+        if ip in self.registered_callbacks:
             _LOGGER.error(
                 "A callback for ip '%s' was already registed, overwriting previous callback",
                 ip,
             )
-        self._registered_callbacks[ip] = callback
+        self.registered_callbacks[ip] = callback
 
     def Unregister_motion_gateway(self, ip):
         """Unregister a Motion Gateway from this Multicast listener."""
-        if ip in self._registered_callbacks:
-            self._registered_callbacks.pop(ip)
+        if ip in self.registered_callbacks:
+            self.registered_callbacks.pop(ip)
 
     async def Start_listen(self):
         """Start listening."""
@@ -113,11 +111,11 @@ class AsyncMotionMulticast(MotionCommunication):
                 (ip_add, _) = addr
                 message = json.loads(data)
 
-                if ip_add not in self._parent._registered_callbacks:
+                if ip_add not in self._parent.registered_callbacks:
                     _LOGGER.info("Unknown motion gateway ip %s", ip_add)
                     return
 
-                callback = self._parent._registered_callbacks[ip_add]
+                callback = self._parent.registered_callbacks[ip_add]
                 callback(message)
 
             except Exception:

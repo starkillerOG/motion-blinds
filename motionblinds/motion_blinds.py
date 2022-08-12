@@ -9,11 +9,12 @@ This module implements the interface to Motion Blinds.
 import logging
 import socket
 import json
+import re
 import struct
 import datetime
 from enum import IntEnum
-from Cryptodome.Cipher import AES
 from threading import Thread
+from Cryptodome.Cipher import AES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -123,18 +124,16 @@ class WirelessMode(IntEnum):
 
 def log_hide(message):
     """Hide security sensitive information from log messages"""
-    from re import compile, sub
-
     mess_copy = message.copy()
 
-    if type(mess_copy) != dict:
+    if not isinstance(mess_copy, dict):
         return mess_copy
 
-    hide_pattern = compile("[a-zA-Z0-9]")
+    hide_pattern = re.compile("[a-zA-Z0-9]")
     if "token" in mess_copy:
-        mess_copy["token"] = sub(hide_pattern, "x", mess_copy["token"])
+        mess_copy["token"] = re.sub(hide_pattern, "x", mess_copy["token"])
     if "AccessToken" in mess_copy:
-        mess_copy["AccessToken"] = sub(hide_pattern, "x", mess_copy["AccessToken"])
+        mess_copy["AccessToken"] = re.sub(hide_pattern, "x", mess_copy["AccessToken"])
 
     return mess_copy
 
@@ -209,6 +208,7 @@ class MotionDiscovery(MotionCommunication):
         self._discovered_devices = {}
 
     def discover(self):
+        """Discover motion gateways."""
         self._mcastsocket = self._create_mcast_socket(
             self._interface, self._bind_interface
         )
@@ -257,7 +257,7 @@ class MotionDiscovery(MotionCommunication):
 
         self._mcastsocket.close()
 
-        if self._discovered_devices == {}:
+        if not self._discovered_devices:
             _LOGGER.warning(
                 "No Motion gateways discovered after %.1f seconds.",
                 self._discovery_time,
@@ -415,20 +415,11 @@ class MotionGateway(MotionCommunication):
         self._received_multicast_msg = False
 
         if self._multicast is not None:
-            self._multicast.Register_motion_gateway(ip, self._multicast_callback)
+            self._multicast.Register_motion_gateway(ip, self.multicast_callback)
 
     def __repr__(self):
         return (
-            "<MotionGateway ip: %s, mac: %s, protocol: %s, firmware: %s, N_devices: %s, status: %s, RSSI: %s dBm>"
-            % (
-                self._ip,
-                self.mac,
-                self.protocol,
-                self.firmware,
-                self.N_devices,
-                self.status,
-                self.RSSI,
-            )
+            f"<MotionGateway ip: {self._ip}, mac: {self.mac}, protocol: {self.protocol}, firmware: {self.firmware}, N_devices: {self.N_devices}, status: {self.status}, RSSI: {self.RSSI} dBm>"
         )
 
     def _get_access_token(self):
@@ -465,7 +456,7 @@ class MotionGateway(MotionCommunication):
                 s.sendto(bytes(json.dumps(message), "utf-8"), (self._ip, UDP_PORT_SEND))
 
                 while True:
-                    single_data, addr = s.recvfrom(SOCKET_BUFSIZE)
+                    single_data, _addr = s.recvfrom(SOCKET_BUFSIZE)
                     data.append(single_data)
 
                     if len(single_data) < int(0.9 * MAX_RESPONSE_LENGTH):
@@ -640,7 +631,7 @@ class MotionGateway(MotionCommunication):
                         device_type,
                     )
 
-    def _multicast_callback(self, message):
+    def multicast_callback(self, message):
         """Process a multicast push message to update data."""
         if message.get("actionResult") is not None:
             _LOGGER.error(
@@ -667,7 +658,7 @@ class MotionGateway(MotionCommunication):
                         log_hide(message),
                     )
                 return
-            self.device_list[mac]._multicast_callback(message)
+            self.device_list[mac].multicast_callback(message)
         elif msgType == "Heartbeat":
             if mac != self._gateway_mac and self._gateway_mac is not None:
                 _LOGGER.warning(
@@ -719,7 +710,7 @@ class MotionGateway(MotionCommunication):
                     "Response to GetDeviceList is not a GetDeviceListAck but '%s'.",
                     msgType,
                 )
-                return
+                return self._device_list
 
             # parse response
             self._parse_device_list_response(response)
@@ -771,7 +762,7 @@ class MotionGateway(MotionCommunication):
             _LOGGER.error(
                 "Trigger_gateway_multicast requires a MotionMulticast to be supplied during initialization"
             )
-            return
+            return False
 
         self._received_multicast_msg = False
 
@@ -808,18 +799,18 @@ class MotionGateway(MotionCommunication):
             blind.Remove_callback("Check_blind_multicast")
         return self._received_multicast_msg
 
-    def Register_callback(self, id, callback):
+    def Register_callback(self, cb_id, callback):
         """Register a external callback function for updates of the gateway."""
-        if id in self._registered_callbacks:
+        if cb_id in self._registered_callbacks:
             _LOGGER.error(
                 "A callback with id '%s' was already registed, overwriting previous callback",
-                id,
+                cb_id,
             )
-        self._registered_callbacks[id] = callback
+        self._registered_callbacks[cb_id] = callback
 
-    def Remove_callback(self, id):
+    def Remove_callback(self, cb_id):
         """Remove a external callback using its id."""
-        self._registered_callbacks.pop(id)
+        self._registered_callbacks.pop(cb_id)
 
     def Clear_callbacks(self):
         """Remove all external registered callbacks for updates of the gateway."""
@@ -949,44 +940,17 @@ class MotionBlind:
 
     def __repr__(self):
         if self._wireless_mode == WirelessMode.UniDirection:
-            return "<MotionBlind mac: %s, type: %s, status: %s, com: %s>" % (
-                self.mac,
-                self.blind_type,
-                self.status,
-                self.wireless_name,
-            )
+            return f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, com: {self.wireless_name}>"
 
         if self._wireless_mode == WirelessMode.BiDirectionLimits:
             return (
-                "<MotionBlind mac: %s, type: %s, status: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
-                % (
-                    self.mac,
-                    self.blind_type,
-                    self.status,
-                    self.limit_status,
-                    self.voltage_name,
-                    self.battery_level,
-                    self.battery_voltage,
-                    self.RSSI,
-                    self.wireless_name,
-                )
+                f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, limit: {self.limit_status}, "
+                f"battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
             )
 
         return (
-            "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, angle: %s, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
-            % (
-                self.mac,
-                self.blind_type,
-                self.status,
-                self.position,
-                self.angle,
-                self.limit_status,
-                self.voltage_name,
-                self.battery_level,
-                self.battery_voltage,
-                self.RSSI,
-                self.wireless_name,
-            )
+            f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, position: {self.position} %, angle: {self.angle}, "
+            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
         )
 
     def _write(self, data):
@@ -1052,15 +1016,15 @@ class MotionBlind:
                 raise
 
     def _calculate_battery_level(self, voltage):
-        if voltage > 0.0 and voltage <= 9.4:
+        if 0.0 < voltage <= 9.4:
             # 2 cel battery pack (8.4V)
             return round((voltage - 6.2) * 100 / (8.4 - 6.2), 0)
 
-        if voltage > 9.4 and voltage <= 13.6:
+        if 9.4 < voltage <= 13.6:
             # 3 cel battery pack (12.6V)
             return round((voltage - 10.4) * 100 / (12.6 - 10.4), 0)
 
-        if voltage > 13.6 and voltage <= 19.0:
+        if 13.6 < voltage <= 19.0:
             # 4 cel battery pack (16.8V)
             return round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
 
@@ -1224,10 +1188,10 @@ class MotionBlind:
                 log_hide(response),
             )
             raise ParseException(
-                "Got an exception while parsing response: %s", log_hide(response)
+                f"Got an exception while parsing response: {log_hide(response)}"
             ) from ex
 
-    def _multicast_callback(self, message):
+    def multicast_callback(self, message):
         """Process a multicast push message to update data."""
         self._parse_response(message)
 
@@ -1300,15 +1264,15 @@ class MotionBlind:
 
                     self._parse_response(mcast_response)
                     break
-                else:
-                    while True:
-                        time_diff = self._last_status_report - start
-                        if time_diff.total_seconds() > 0:
-                            break
-                        time_past = datetime.datetime.utcnow() - start
-                        if time_past.total_seconds() > self._gateway._mcast_timeout:
-                            raise socket.timeout
-                    break
+
+                while True:
+                    time_diff = self._last_status_report - start
+                    if time_diff.total_seconds() > 0:
+                        break
+                    time_past = datetime.datetime.utcnow() - start
+                    if time_past.total_seconds() > self._gateway._mcast_timeout:
+                        raise socket.timeout
+                break
             except socket.timeout:
                 if attempt >= 5:
                     _LOGGER.error(
@@ -1401,18 +1365,18 @@ class MotionBlind:
 
         self._parse_response(response)
 
-    def Register_callback(self, id, callback):
+    def Register_callback(self, cb_id, callback):
         """Register a external callback function for updates of this blind."""
-        if id in self._registered_callbacks:
+        if cb_id in self._registered_callbacks:
             _LOGGER.error(
                 "A callback with id '%s' was already registed, overwriting previous callback",
-                id,
+                cb_id,
             )
-        self._registered_callbacks[id] = callback
+        self._registered_callbacks[cb_id] = callback
 
-    def Remove_callback(self, id):
+    def Remove_callback(self, cb_id):
         """Remove a external callback using its id."""
-        self._registered_callbacks.pop(id)
+        self._registered_callbacks.pop(cb_id)
 
     def Clear_callbacks(self):
         """Remove all external registered callbacks for updates of this blind."""
@@ -1539,21 +1503,9 @@ class MotionTopDownBottomUp(MotionBlind):
 
     def __repr__(self):
         return (
-            "<MotionBlind mac: %s, type: %s, status: %s, position: %s %%, scaled_position: %s %%, width: %s %%, limit: %s, battery: %s, %s %%, %s V, RSSI: %s dBm, com: %s>"
-            % (
-                self.mac,
-                self.blind_type,
-                self.status,
-                self.position,
-                self.scaled_position,
-                self.width,
-                self.limit_status,
-                self.voltage_name,
-                self.battery_level,
-                self.battery_voltage,
-                self.RSSI,
-                self.wireless_name,
-            )
+            f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, "
+            f"position: {self.position} %, scaled_position: {self.scaled_position} %, width: {self.width} %, "
+            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
         )
 
     def _parse_response(self, response):
@@ -1655,7 +1607,7 @@ class MotionTopDownBottomUp(MotionBlind):
                 log_hide(response),
             )
             raise ParseException(
-                "Got an exception while parsing response: %s", log_hide(response)
+                f"Got an exception while parsing response: {log_hide(response)}"
             ) from ex
 
     def Stop(self, motor: str = "B"):
@@ -1712,7 +1664,7 @@ class MotionTopDownBottomUp(MotionBlind):
 
         self._parse_response(response)
 
-    def Set_position(self, position, motor: str = "B", width: int = None):
+    def Set_position(self, position, motor: str = "B", width: int = None):  # pylint: disable=W0237
         """
         Set the position of the blind.
 
@@ -1740,7 +1692,7 @@ class MotionTopDownBottomUp(MotionBlind):
                 )
                 return
         elif motor == "C":
-            if position >= width / 2.0 and position <= (100 - width / 2.0):
+            if width / 2.0 <= position <= (100 - width / 2.0):
                 data = {
                     "targetPosition_T": position - width / 2.0,
                     "targetPosition_B": position + width / 2.0,
@@ -1779,20 +1731,23 @@ class MotionTopDownBottomUp(MotionBlind):
                 self._position["T"]
                 + (100.0 - self._position["T"]) * scaled_position / 100.0
             )
-            return self.Set_position(pos_bottom, motor)
-        elif motor == "T":
+            self.Set_position(pos_bottom, motor)
+            return
+        if motor == "T":
             pos_top = scaled_position * self._position["B"] / 100.0
-            return self.Set_position(pos_top, motor)
-        elif motor == "C":
+            self.Set_position(pos_top, motor)
+            return
+        if motor == "C":
             pos_combined = (
                 self.width / 2.0 + scaled_position * (100.0 - self.width) / 100.0
             )
-            return self.Set_position(pos_combined, motor)
-        else:
-            _LOGGER.error(
-                'Please specify which motor to control "T" (top) or "B" (bottom)'
-            )
+            self.Set_position(pos_combined, motor)
             return
+
+        _LOGGER.error(
+            'Please specify which motor to control "T" (top) or "B" (bottom)'
+        )
+        return
 
     def Set_angle(self, angle, motor: str = "B"):
         """
