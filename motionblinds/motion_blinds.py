@@ -1164,8 +1164,8 @@ class MotionBlind:
                 self._battery_level = self._calculate_battery_level(
                     self._battery_voltage
                 )
-                if self._battery_level <= 0.0 or self._battery_level >= 200.0:
-                    _LOGGER.warning(
+                if self._battery_voltage <= 0.0 or self._battery_level >= 200.0:
+                    _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
                         self.mac,
                         self._battery_voltage,
@@ -1585,10 +1585,12 @@ class MotionTopDownBottomUp(MotionBlind):
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
                 if (
-                    0.0 >= self._battery_level["T"] >= 200.0
-                    or 0.0 >= self._battery_level["B"] >= 200.0
+                    self._battery_level["T"] >= 200.0
+                    or self._battery_level["B"] >= 200.0
+                    or self._battery_voltage["T"] <= 0.0
+                    or self._battery_voltage["B"] <= 0.0
                 ):
-                    _LOGGER.warning(
+                    _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
                         self.mac,
                         self._battery_voltage,
