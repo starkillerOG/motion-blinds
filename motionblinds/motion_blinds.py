@@ -1176,7 +1176,7 @@ class MotionBlind:
             if self._wireless_mode == WirelessMode.BiDirectionLimits:
                 return
 
-            if self._wireless_mode == WirelessMode.VirtualPercentageLimits and self._limit_status < LimitStatus.BothLimitsDetected
+            if self._wireless_mode == WirelessMode.VirtualPercentageLimits and self._limit_status < LimitStatus.BothLimitsDetected:
                 _LOGGER.warning("Virtual percentage motor with mac '%s' has mechanical limit status '%s'"
                     ", both mechanical limits need to be detected before percentage control can be used",
                     self.mac,
