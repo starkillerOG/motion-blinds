@@ -97,11 +97,11 @@ class LimitStatus(IntEnum):
     """Limit status of the blind."""
 
     Unknown = -1
-    NoLimit = 0
-    TopLimit = 1
-    BottomLimit = 2
-    Limits = 3
-    Limit3 = 4
+    NoLimitDetected = 0
+    TopLimitDetected = 1
+    BottomLimitDetected = 2
+    BothLimitsDetected = 3
+    Limit3Detected = 4
 
 
 class VoltageMode(IntEnum):
@@ -120,6 +120,7 @@ class WirelessMode(IntEnum):
     BiDirection = 1
     BiDirectionLimits = 2
     Others = 3
+    VirtualPercentageLimits = 4
 
 
 def log_hide(message):
@@ -1173,6 +1174,14 @@ class MotionBlind:
                     )
 
             if self._wireless_mode == WirelessMode.BiDirectionLimits:
+                return
+
+            if self._wireless_mode == WirelessMode.VirtualPercentageLimits and self._limit_status < LimitStatus.BothLimitsDetected
+                _LOGGER.warning("Virtual percentage motor with mac '%s' has mechanical limit status '%s'"
+                    ", both mechanical limits need to be detected before percentage control can be used",
+                    self.mac,
+                    self.limit_status,
+                )
                 return
 
             self._position = response["data"].get("currentPosition", 0)
