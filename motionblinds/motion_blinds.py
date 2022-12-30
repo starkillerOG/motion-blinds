@@ -1042,6 +1042,9 @@ class MotionBlind:
             # Error already logged in _send function
             return False
 
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug("Parsing response: '%s'", log_hide(response))
+
         # check device_type
         device_type = response.get("deviceType", self._device_type)
         if device_type not in [
