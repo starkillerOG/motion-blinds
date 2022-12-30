@@ -1184,7 +1184,7 @@ class MotionBlind:
                 )
                 return
 
-            self._position = response["data"].get("currentPosition", 0)
+            self._position = response["data"].get("currentPosition", 1)
             self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
             if self._angle != 0:
                 self._restore_angle = self._angle
