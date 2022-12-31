@@ -1029,6 +1029,10 @@ class MotionBlind:
             # 4 cel battery pack (16.8V)
             return round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
 
+        if voltage == 220.0:
+            # AC motor
+            return None
+
         if voltage <= 0.0:
             return 0.0
 
@@ -1168,7 +1172,7 @@ class MotionBlind:
                 self._battery_level = self._calculate_battery_level(
                     self._battery_voltage
                 )
-                if self._battery_voltage <= 0.0 or self._battery_level >= 200.0:
+                if self._voltage_mode != VoltageMode.AC and (self._battery_voltage <= 0.0 or self._battery_level >= 200.0):
                     _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
                         self.mac,
@@ -1597,10 +1601,11 @@ class MotionTopDownBottomUp(MotionBlind):
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
                 if (
-                    self._battery_level["T"] >= 200.0
+                    self._voltage_mode != VoltageMode.AC
+                    and (self._battery_level["T"] >= 200.0
                     or self._battery_level["B"] >= 200.0
                     or self._battery_voltage["T"] <= 0.0
-                    or self._battery_voltage["B"] <= 0.0
+                    or self._battery_voltage["B"] <= 0.0)
                 ):
                     _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
