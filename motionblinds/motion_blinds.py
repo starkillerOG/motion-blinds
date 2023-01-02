@@ -1646,9 +1646,9 @@ class MotionTopDownBottomUp(MotionBlind):
     def Open(self, motor: str = "B"):
         """Open the blind/move the blind up."""
         if motor == "B":
-            data = {"operation_B": 1}
+            data = {"targetPosition_B": 0}
         elif motor == "T":
-            data = {"operation_T": 1}
+            data = {"targetPosition_T": 0}
         elif motor == "C":
             data = {"operation_B": 1, "operation_T": 1}
         else:
@@ -1664,9 +1664,9 @@ class MotionTopDownBottomUp(MotionBlind):
     def Close(self, motor: str = "B"):
         """Close the blind/move the blind down."""
         if motor == "B":
-            data = {"operation_B": 0}
+            data = {"targetPosition_B": 100}
         elif motor == "T":
-            data = {"operation_T": 0}
+            data = {"targetPosition_T": 100}
         elif motor == "C":
             data = {"operation_B": 0, "operation_T": 1}
         else:
