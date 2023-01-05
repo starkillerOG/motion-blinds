@@ -119,8 +119,9 @@ class WirelessMode(IntEnum):
     UniDirection = 0
     BiDirection = 1
     BiDirectionLimits = 2
-    Others = 3
+    WiFi = 3
     VirtualPercentageLimits = 4
+    Others = 5
 
 
 def log_hide(message):
@@ -937,6 +938,7 @@ class MotionBlind:
         self._restore_angle = None
         self._battery_voltage = None
         self._battery_level = None
+        self._is_charging = None
         self._RSSI = None
 
     def __repr__(self):
@@ -946,12 +948,12 @@ class MotionBlind:
         if self._wireless_mode == WirelessMode.BiDirectionLimits:
             return (
                 f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, limit: {self.limit_status}, "
-                f"battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
+                f"battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, charging: {self.is_charging}, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
             )
 
         return (
             f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, position: {self.position} %, angle: {self.angle}, "
-            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
+            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, charging: {self.is_charging}, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
         )
 
     def _write(self, data):
@@ -1122,6 +1124,11 @@ class MotionBlind:
 
         try:
             self._RSSI = response["data"]["RSSI"]
+        except KeyError:
+            pass
+
+        try:
+            self._is_charging = response["data"]["chargingState"]
         except KeyError:
             pass
 
@@ -1493,6 +1500,13 @@ class MotionBlind:
         return self._battery_level
 
     @property
+    def is_charging(self):
+        """Return if the blind is currently charging its battery."""
+        if self._is_charging is None:
+            return None
+        return self._is_charging == 1
+
+    @property
     def RSSI(self):
         """Return the radio connection strength of the blind to the gateway in dBm."""
         return self._RSSI
@@ -1519,7 +1533,7 @@ class MotionTopDownBottomUp(MotionBlind):
         return (
             f"<MotionBlind mac: {self.mac}, type: {self.blind_type}, status: {self.status}, "
             f"position: {self.position} %, scaled_position: {self.scaled_position} %, width: {self.width} %, "
-            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
+            f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, charging: {self.is_charging}, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
         )
 
     def _parse_response(self, response):
