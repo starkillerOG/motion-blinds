@@ -1664,7 +1664,7 @@ class MotionTopDownBottomUp(MotionBlind):
         elif motor == "T":
             data = {"targetPosition_T": 0}
         elif motor == "C":
-            data = {"operation_B": 1, "operation_T": 1}
+            data = {"targetPosition_B": 0, "targetPosition_T": 0}
         else:
             _LOGGER.error(
                 'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'
@@ -1682,7 +1682,7 @@ class MotionTopDownBottomUp(MotionBlind):
         elif motor == "T":
             data = {"targetPosition_T": 100}
         elif motor == "C":
-            data = {"operation_B": 0, "operation_T": 1}
+            data = {"targetPosition_B": 100, "targetPosition_T": 0}
         else:
             _LOGGER.error(
                 'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'
