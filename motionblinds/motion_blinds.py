@@ -77,6 +77,7 @@ class BlindType(IntEnum):
     DualShade = 27
     VerticalBlind = 28
     VerticalBlindRight = 29
+    WovenWoodShades = 40
     Switch = 43
 
 
