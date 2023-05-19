@@ -1026,7 +1026,9 @@ class MotionBlind:
 
         if 9.4 < voltage <= 13.6:
             # 3 cel battery pack (12.6V)
-            return round((voltage - 10.4) * 100 / (12.6 - 10.4), 0)
+            # Motion Blinds specs: 10.4-12.6V
+            # Tested: 10.27-12.34V
+            return round((voltage - 10.27) * 100 / (12.34 - 10.27), 0)
 
         if 13.6 < voltage <= 19.0:
             # 4 cel battery pack (16.8V)
