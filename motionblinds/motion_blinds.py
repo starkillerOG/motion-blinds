@@ -570,9 +570,13 @@ class MotionGateway(MotionCommunication):
         self._available = True
         data = response.get("data")
         if data:
-            self._status = GatewayStatus(
-                data.get("currentState", GatewayStatus.Unknown)
-            )
+            try:
+                self._status = GatewayStatus(
+                    data.get("currentState", GatewayStatus.Unknown)
+                )
+            except ValueError:
+                self._status = GatewayStatus.Unknown
+                _LOGGER.debug("Gateway returned unknown GatewayStatus %s", data.get("currentState"))
             self._N_devices = data.get("numberOfDevices", 0)
             self._RSSI = data.get("RSSI")
 
