@@ -509,6 +509,9 @@ class MotionGateway(MotionCommunication):
             responses.append(json.loads(d))
 
         for response in responses:
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                _LOGGER.debug("Received response: '%s'", log_hide(response))
+
             if response.get("actionResult") is not None:
                 _LOGGER.error(
                     "Received actionResult: '%s', when sending message: '%s', got response: '%s'",
@@ -648,6 +651,9 @@ class MotionGateway(MotionCommunication):
                 log_hide(message),
             )
             return
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug("Received multicast message: '%s'", log_hide(message))
 
         msgType = message.get("msgType")
         mac = message.get("mac")
@@ -1054,9 +1060,6 @@ class MotionBlind:
         if response.get("actionResult") is not None:
             # Error already logged in _send function
             return False
-
-        if _LOGGER.isEnabledFor(logging.DEBUG):
-            _LOGGER.debug("Parsing response: '%s'", log_hide(response))
 
         # check device_type
         device_type = response.get("deviceType", self._device_type)
