@@ -79,6 +79,7 @@ class BlindType(IntEnum):
     VerticalBlindRight = 29
     WovenWoodShades = 40
     Switch = 43
+    InsectScreen = 44
 
 
 class BlindStatus(IntEnum):
