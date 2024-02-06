@@ -80,6 +80,7 @@ class BlindType(IntEnum):
     WovenWoodShades = 40
     Switch = 43
     InsectScreen = 44
+    TriangleBlind  = 57
 
 
 class BlindStatus(IntEnum):
@@ -1673,6 +1674,11 @@ class MotionTopDownBottomUp(MotionBlind):
         if motor == "B":
             data = {"targetPosition_B": 0}
         elif motor == "T":
+            if self._position["B"] != 0 and self._blind_type in [BlindType.TriangleBlind]:
+                _LOGGER.error(
+                    "Error setting position, the top of the Triangle blind can not open withouth the bottom"
+                )
+                return
             data = {"targetPosition_T": 0}
         elif motor == "C":
             data = {"targetPosition_B": 0, "targetPosition_T": 0}
@@ -1689,6 +1695,11 @@ class MotionTopDownBottomUp(MotionBlind):
     def Close(self, motor: str = "B"):
         """Close the blind/move the blind down."""
         if motor == "B":
+            if self._position["T"] != 100 and self._blind_type in [BlindType.TriangleBlind]:
+                _LOGGER.error(
+                    "Error setting position, the bottom of the Triangle blind can not close withouth the top"
+                )
+                return
             data = {"targetPosition_B": 100}
         elif motor == "T":
             data = {"targetPosition_T": 100}
@@ -1715,7 +1726,28 @@ class MotionTopDownBottomUp(MotionBlind):
         if width is None:
             width = self.width
 
-        if motor == "B":
+        if motor == "B" and self._blind_type in [BlindType.TriangleBlind]:
+            if self._position["T"] == 100:
+                data = {"targetPosition_B": position}
+            else:
+                _LOGGER.error(
+                    "Error setting position, the bottom of the Triangle blind can only move when the top is closed"
+                )
+                return
+        elif motor == "T" and self._blind_type in [BlindType.TriangleBlind]:
+            if self._position["B"] == 0:
+                data = {"targetPosition_T": position}
+            else:
+                _LOGGER.error(
+                    "Error setting position, the top of the Triangle blind can only move when the bottom is open"
+                )
+                return
+        elif motor == "C" and self._blind_type in [BlindType.TriangleBlind]:
+            data = {
+                "targetPosition_T": min(position*2, 100),
+                "targetPosition_B": max(position*2-100, 0),
+            }
+        elif motor == "B":
             if position >= self._position["T"]:
                 data = {"targetPosition_B": position}
             else:
@@ -1766,6 +1798,10 @@ class MotionTopDownBottomUp(MotionBlind):
             0 = at position of the top blind
             100 = closed
         """
+        if self._blind_type in [BlindType.TriangleBlind]:
+            self.Set_position(scaled_position, motor)
+            return
+
         if motor == "B":
             pos_bottom = self._position["T"] + (100.0 - self._position["T"]) * scaled_position / 100.0
             self.Set_position(pos_bottom, motor)
@@ -1852,6 +1888,9 @@ class MotionTopDownBottomUp(MotionBlind):
         For the Top this is the position from the top to the bottom blind
         For the Bottom this is the postion from the top blind to the bottom
         """
+        if self._blind_type in [BlindType.TriangleBlind]:
+            return self._position
+
         if self._position["B"] > 0:
             pos_top = round(self._position["T"] * 100.0 / self._position["B"], 1)
         else:
@@ -1878,6 +1917,9 @@ class MotionTopDownBottomUp(MotionBlind):
     @property
     def width(self):
         """Return the current width of the closed surface in % (0-100)."""
+        if self._blind_type in [BlindType.TriangleBlind]:
+            return (self._position["B"] + self._position["T"]) / 2
+
         return self._position["B"] - self._position["T"]
 
     @property
