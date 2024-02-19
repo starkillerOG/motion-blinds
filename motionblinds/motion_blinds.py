@@ -1671,14 +1671,20 @@ class MotionTopDownBottomUp(MotionBlind):
 
     def Open(self, motor: str = "B"):
         """Open the blind/move the blind up."""
-        if motor == "B":
-            data = {"targetPosition_B": 0}
-        elif motor == "T":
-            if self._position["B"] != 0 and self._blind_type in [BlindType.TriangleBlind]:
+        if motor == "B" and self._blind_type in [BlindType.TriangleBlind]:
+            data = {"operation_B": 1}
+        elif motor == "T" and self._blind_type in [BlindType.TriangleBlind]:
+            if self._position["B"] != 0:
                 _LOGGER.error(
                     "Error setting position, the top of the Triangle blind can not open withouth the bottom"
                 )
                 return
+            data = {"operation_T": 1}
+        elif motor == "C" and self._blind_type in [BlindType.TriangleBlind]:
+            data = {"operation_B": 1, "operation_T": 1}
+        elif motor == "B":
+            data = {"targetPosition_B": 0}
+        elif motor == "T":
             data = {"targetPosition_T": 0}
         elif motor == "C":
             data = {"targetPosition_B": 0, "targetPosition_T": 0}
@@ -1694,12 +1700,18 @@ class MotionTopDownBottomUp(MotionBlind):
 
     def Close(self, motor: str = "B"):
         """Close the blind/move the blind down."""
-        if motor == "B":
-            if self._position["T"] != 100 and self._blind_type in [BlindType.TriangleBlind]:
+        if motor == "B" and self._blind_type in [BlindType.TriangleBlind]:
+            if self._position["T"] != 100:
                 _LOGGER.error(
                     "Error setting position, the bottom of the Triangle blind can not close withouth the top"
                 )
                 return
+            data = {"operation_B": 0}
+        elif motor == "T" and self._blind_type in [BlindType.TriangleBlind]:
+            data = {"operation_T": 0}
+        elif motor == "C" and self._blind_type in [BlindType.TriangleBlind]:
+            data = {"operation_B": 0, "operation_T": 0}
+        elif motor == "B":
             data = {"targetPosition_B": 100}
         elif motor == "T":
             data = {"targetPosition_T": 100}
