@@ -31,9 +31,11 @@ DEVICE_TYPE_DR = "10000002"  # Double Roller
 
 DEVICE_TYPE_WIFI_CURTAIN = "22000000"  # Curtain direct WiFi
 DEVICE_TYPE_WIFI_BLIND = "22000002"  # Standard Blind direct WiFi
+DEVICE_TYPE_WIFI_GATE = "22000005"  # Standard Garage gate (for example Krispol)
 DEVICE_TYPES_WIFI = [
     DEVICE_TYPE_WIFI_BLIND,
     DEVICE_TYPE_WIFI_CURTAIN,
+    DEVICE_TYPE_WIFI_GATE,
 ]  # Direct WiFi devices
 
 DEVICE_TYPES_CONTROLLER = DEVICE_TYPES_GATEWAY + DEVICE_TYPES_WIFI
@@ -632,7 +634,7 @@ class MotionGateway(MotionCommunication):
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
                         gateway=self, mac=blind_mac, device_type=device_type
                     )
-                elif device_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN]:
+                elif device_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN, DEVICE_TYPE_WIFI_GATE]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self, mac=blind_mac, device_type=device_type
                     )
@@ -1071,6 +1073,7 @@ class MotionBlind:
             DEVICE_TYPE_DR,
             DEVICE_TYPE_WIFI_BLIND,
             DEVICE_TYPE_WIFI_CURTAIN,
+            DEVICE_TYPE_WIFI_GATE,
         ]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
