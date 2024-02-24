@@ -31,7 +31,7 @@ DEVICE_TYPE_DR = "10000002"  # Double Roller
 
 DEVICE_TYPE_WIFI_CURTAIN = "22000000"  # Curtain direct WiFi
 DEVICE_TYPE_WIFI_BLIND = "22000002"  # Standard Blind direct WiFi
-DEVICE_TYPE_WIFI_GATE = "22000005"  # Standard Garage gate (for example Krispol)
+DEVICE_TYPE_WIFI_GATE = "22000005"  # Garage gate direct WiFi (for example Krispol)
 DEVICE_TYPES_WIFI = [
     DEVICE_TYPE_WIFI_BLIND,
     DEVICE_TYPE_WIFI_CURTAIN,
