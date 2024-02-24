@@ -667,7 +667,7 @@ class MotionGateway(MotionCommunication):
                 for callback in self._registered_callbacks.values():
                     callback()
             if mac not in self.device_list:
-                if self.device_list:
+                if self.device_list and mac != self._gateway_mac:
                     _LOGGER.warning(
                         "Multicast push with mac '%s' not in device_list, message: '%s'",
                         mac,
