@@ -455,6 +455,10 @@ class MotionGateway(MotionCommunication):
         """Send a command to the Motion Gateway."""
         attempt = 1
         data = []
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug("Sending message: '%s'", log_hide(message))
+
         while True:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
