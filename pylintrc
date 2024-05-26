@@ -8,7 +8,6 @@ disable=
   broad-except,
   bare-except,
   abstract-method,
-  no-self-use,
   duplicate-code,
   too-few-public-methods,
   too-many-arguments,
@@ -21,4 +20,4 @@ disable=
   too-many-statements,
 
 [EXCEPTIONS]
-overgeneral-exceptions=Exception
+overgeneral-exceptions=builtins.Exception
