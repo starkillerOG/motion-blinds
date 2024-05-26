@@ -1297,8 +1297,6 @@ class MotionBlind:
             if self._gateway._multicast is None:
                 mcast = self._gateway._create_mcast_socket("any", False)
                 mcast.settimeout(self._gateway._mcast_timeout)
-            else:
-                start = datetime.datetime.utcnow()
 
             # send update request
             self.Update_trigger()
@@ -1311,6 +1309,7 @@ class MotionBlind:
                     self._parse_response(mcast_response)
                     break
 
+                start = datetime.datetime.utcnow()
                 while True:
                     time_diff = self._last_status_report - start
                     if time_diff.total_seconds() > 0:
