@@ -5,7 +5,6 @@ This module implements the async interface to Motion Blinds.
 :license: MIT, see LICENSE for more details.
 """
 
-
 import logging
 import json
 import asyncio

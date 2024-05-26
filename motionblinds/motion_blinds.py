@@ -5,7 +5,6 @@ This module implements the interface to Motion Blinds.
 :license: MIT, see LICENSE for more details.
 """
 
-
 import logging
 import socket
 import json
@@ -82,7 +81,7 @@ class BlindType(IntEnum):
     WovenWoodShades = 40
     Switch = 43
     InsectScreen = 44
-    TriangleBlind  = 57
+    TriangleBlind = 57
 
 
 class BlindStatus(IntEnum):
@@ -425,9 +424,7 @@ class MotionGateway(MotionCommunication):
             self._multicast.Register_motion_gateway(ip, self.multicast_callback)
 
     def __repr__(self):
-        return (
-            f"<MotionGateway ip: {self._ip}, mac: {self.mac}, protocol: {self.protocol}, firmware: {self.firmware}, N_devices: {self.N_devices}, status: {self.status}, RSSI: {self.RSSI} dBm>"
-        )
+        return f"<MotionGateway ip: {self._ip}, mac: {self.mac}, protocol: {self.protocol}, firmware: {self.firmware}, N_devices: {self.N_devices}, status: {self.status}, RSSI: {self.RSSI} dBm>"
 
     def _get_access_token(self):
         """Calculate the AccessToken from the Key and Token."""
@@ -638,7 +635,11 @@ class MotionGateway(MotionCommunication):
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
                         gateway=self, mac=blind_mac, device_type=device_type
                     )
-                elif device_type in [DEVICE_TYPE_WIFI_BLIND, DEVICE_TYPE_WIFI_CURTAIN, DEVICE_TYPE_WIFI_GATE]:
+                elif device_type in [
+                    DEVICE_TYPE_WIFI_BLIND,
+                    DEVICE_TYPE_WIFI_CURTAIN,
+                    DEVICE_TYPE_WIFI_GATE,
+                ]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self, mac=blind_mac, device_type=device_type
                     )
@@ -1197,7 +1198,9 @@ class MotionBlind:
                 self._battery_level = self._calculate_battery_level(
                     self._battery_voltage
                 )
-                if self._voltage_mode != VoltageMode.AC and (self._battery_voltage <= 0.0 or self._battery_level >= 200.0):
+                if self._voltage_mode != VoltageMode.AC and (
+                    self._battery_voltage <= 0.0 or self._battery_level >= 200.0
+                ):
                     _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
                         self.mac,
@@ -1208,8 +1211,12 @@ class MotionBlind:
             if self._wireless_mode == WirelessMode.BiDirectionLimits:
                 return
 
-            if self._wireless_mode == WirelessMode.VirtualPercentageLimits and self._limit_status < LimitStatus.BothLimitsDetected:
-                _LOGGER.warning("Virtual percentage motor with mac '%s' has mechanical limit status '%s'"
+            if (
+                self._wireless_mode == WirelessMode.VirtualPercentageLimits
+                and self._limit_status < LimitStatus.BothLimitsDetected
+            ):
+                _LOGGER.warning(
+                    "Virtual percentage motor with mac '%s' has mechanical limit status '%s'"
                     ", both mechanical limits need to be detected before percentage control can be used",
                     self.mac,
                     self.limit_status,
@@ -1632,12 +1639,11 @@ class MotionTopDownBottomUp(MotionBlind):
                     "T": self._calculate_battery_level(self._battery_voltage["T"]),
                     "B": self._calculate_battery_level(self._battery_voltage["B"]),
                 }
-                if (
-                    self._voltage_mode != VoltageMode.AC
-                    and (self._battery_level["T"] >= 200.0
+                if self._voltage_mode != VoltageMode.AC and (
+                    self._battery_level["T"] >= 200.0
                     or self._battery_level["B"] >= 200.0
                     or self._battery_voltage["T"] <= 0.0
-                    or self._battery_voltage["B"] <= 0.0)
+                    or self._battery_voltage["B"] <= 0.0
                 ):
                     _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltages: '%s', '%s'",
@@ -1762,8 +1768,8 @@ class MotionTopDownBottomUp(MotionBlind):
                 return
         elif motor == "C" and self._blind_type in [BlindType.TriangleBlind]:
             data = {
-                "targetPosition_T": min(position*2, 100),
-                "targetPosition_B": max(position*2-100, 0),
+                "targetPosition_T": min(position * 2, 100),
+                "targetPosition_B": max(position * 2 - 100, 0),
             }
         elif motor == "B":
             if position >= self._position["T"]:
@@ -1833,9 +1839,7 @@ class MotionTopDownBottomUp(MotionBlind):
             self.Set_position(pos_combined, motor)
             return
 
-        _LOGGER.error(
-            'Please specify which motor to control "T" (top) or "B" (bottom)'
-        )
+        _LOGGER.error('Please specify which motor to control "T" (top) or "B" (bottom)')
         return
 
     def Set_angle(self, angle, motor: str = "B"):
