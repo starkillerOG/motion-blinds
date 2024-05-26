@@ -147,14 +147,16 @@ def log_hide(message):
 class MotionCommunication:
     """Communication class for Motion Gateways."""
 
-    def _get_timestamp(self):
+    @staticmethod
+    def _get_timestamp():
         """Get the current time and format according to required Message-ID (Timestamp)."""
         time = datetime.datetime.utcnow()
         time_str = time.strftime("%Y%m%d%H%M%S%f")[:-3]
 
         return time_str
 
-    def _create_mcast_socket(self, interface, bind_interface, blocking=True):
+    @staticmethod
+    def _create_mcast_socket(interface, bind_interface, blocking=True):
         """Create and bind a socket for communication."""
         # Host IP adress is recommended as interface.
         if interface == "any":
@@ -1037,7 +1039,8 @@ class MotionBlind:
                 mcast_socket.close()
                 raise
 
-    def _calculate_battery_level(self, voltage):
+    @staticmethod
+    def _calculate_battery_level(voltage):
         if 0.0 < voltage <= 9.4:
             # 2 cel battery pack (8.4V)
             return round((voltage - 6.2) * 100 / (8.4 - 6.2), 0)

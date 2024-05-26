@@ -120,7 +120,8 @@ class AsyncMotionMulticast(MotionCommunication):
             except Exception:
                 _LOGGER.exception("Cannot process multicast message: '%s'", data)
 
-        def error_received(self, exc):
+        @staticmethod
+        def error_received(exc):
             """Log UDP errors."""
             _LOGGER.error("UDP error received in MotionMulticast listener: %s", exc)
 
