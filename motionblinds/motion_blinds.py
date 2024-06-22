@@ -1055,7 +1055,7 @@ class MotionBlind:
             # 4 cel battery pack (16.8V)
             return round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
 
-        if voltage == 220.0:
+        if voltage >= 100.0:
             # AC motor
             return None
 
