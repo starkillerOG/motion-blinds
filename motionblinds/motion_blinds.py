@@ -1053,9 +1053,6 @@ class MotionBlind:
 
         if voltage >= 100.0:
             # AC motor
-            #There are a myriad of residential mains voltages, 
-            # but all of them seem to be over 100.
-            #https://en.wikipedia.org/wiki/Mains_electricity_by_country
             return None
 
         if voltage <= 0.0:
