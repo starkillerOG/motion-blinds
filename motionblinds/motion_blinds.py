@@ -1413,6 +1413,27 @@ class MotionBlind:
 
         self._parse_response(response)
 
+    def Set_favorite_position(self):
+        """
+        Set current position as favorite position.
+        
+        First the blind needs to be put in configuration mode (stepping up/down).
+        This is done by shortly pressing the reset button on the physical device.
+        """
+        data = {"operation": 11}
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Go_favorite_position(self):
+        """Move the blind to the favorite position."""
+        data = {"operation": 12}
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
     def Register_callback(self, cb_id, callback):
         """Register a external callback function for updates of this blind."""
         if cb_id in self._registered_callbacks:
@@ -1899,6 +1920,27 @@ class MotionTopDownBottomUp(MotionBlind):
                 'Please specify which motor to control "T" (top), "B" (bottom) or "C" (combined)'
             )
             return
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Set_favorite_position(self):
+        """
+        Set current position as favorite position.
+        
+        First the blind needs to be put in configuration mode (stepping up/down).
+        This is done by shortly pressing the reset button on the physical device.
+        """
+        data = {"operation_B": 11, "operation_T": 11}
+
+        response = self._write(data)
+
+        self._parse_response(response)
+
+    def Go_favorite_position(self):
+        """Move the blind to the favorite position."""
+        data = {"operation_B": 12, "operation_T": 12}
 
         response = self._write(data)
 
