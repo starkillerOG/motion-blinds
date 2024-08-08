@@ -1416,7 +1416,7 @@ class MotionBlind:
     def Set_favorite_position(self):
         """
         Set current position as favorite position.
-        
+
         First the blind needs to be put in configuration mode (stepping up/down).
         This is done by shortly pressing the reset button on the physical device.
         """
@@ -1928,7 +1928,7 @@ class MotionTopDownBottomUp(MotionBlind):
     def Set_favorite_position(self):
         """
         Set current position as favorite position.
-        
+
         First the blind needs to be put in configuration mode (stepping up/down).
         This is done by shortly pressing the reset button on the physical device.
         """
