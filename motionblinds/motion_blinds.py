@@ -1202,7 +1202,7 @@ class MotionBlind:
                     self._battery_voltage
                 )
                 if self._voltage_mode != VoltageMode.AC and (
-                    self._battery_voltage <= 0.0 or self._battery_level >= 200.0
+                    self._battery_level is None or self._battery_voltage <= 0.0 or self._battery_level >= 200.0
                 ):
                     _LOGGER.debug(
                         "Device with mac '%s' reported voltage '%s' outside of expected limits, got raw voltage: '%s'",
