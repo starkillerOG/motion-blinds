@@ -11,6 +11,7 @@ disable=
   duplicate-code,
   too-few-public-methods,
   too-many-arguments,
+  too-many-positional-arguments,
   too-many-branches,
   too-many-instance-attributes,
   too-many-lines,
