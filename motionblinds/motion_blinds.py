@@ -11,10 +11,10 @@ import json
 import re
 import struct
 import datetime
+from typing import Union
 from enum import IntEnum
 from threading import Thread
 from Cryptodome.Cipher import AES
-from typing import Union
 
 _LOGGER = logging.getLogger(__name__)
 
