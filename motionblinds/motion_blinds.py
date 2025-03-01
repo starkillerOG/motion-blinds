@@ -397,6 +397,7 @@ class MotionGateway(MotionCommunication):
         mcast_timeout: float = 5.0,
         multi_resp_timeout: float = 0.2,
         multicast: MotionMulticast = None,
+        blind_type_list: dict[str, int] | None = None,
     ):
         self._ip = ip
         self._key = key
@@ -419,6 +420,10 @@ class MotionGateway(MotionCommunication):
         self._RSSI = None
         self._protocol_version = None
         self._firmware_version = None
+
+        self._blind_type_list = {}
+        if blind_type_list is not None:
+            self._blind_type_list = blind_type_list
 
         self._received_multicast_msg = False
 
@@ -622,9 +627,13 @@ class MotionGateway(MotionCommunication):
             device_type = blind["deviceType"]
             if device_type not in DEVICE_TYPES_GATEWAY:
                 blind_mac = blind["mac"]
+                blind_type = self._blind_type_list.get(blind_mac)
                 if device_type in [DEVICE_TYPE_BLIND]:
                     self._device_list[blind_mac] = MotionBlind(
-                        gateway=self, mac=blind_mac, device_type=device_type
+                        gateway=self,
+                        mac=blind_mac,
+                        device_type=device_type,
+                        blind_type=blind_type,
                     )
                 elif device_type in [DEVICE_TYPE_DR]:
                     self._device_list[blind_mac] = MotionBlind(
@@ -632,10 +641,14 @@ class MotionGateway(MotionCommunication):
                         mac=blind_mac,
                         device_type=device_type,
                         max_angle=90,
+                        blind_type=blind_type,
                     )
                 elif device_type in [DEVICE_TYPE_TDBU]:
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
-                        gateway=self, mac=blind_mac, device_type=device_type
+                        gateway=self,
+                        mac=blind_mac,
+                        device_type=device_type,
+                        blind_type=blind_type,
                     )
                 elif device_type in [
                     DEVICE_TYPE_WIFI_BLIND,
@@ -643,7 +656,10 @@ class MotionGateway(MotionCommunication):
                     DEVICE_TYPE_WIFI_GATE,
                 ]:
                     self._device_list[blind_mac] = MotionBlind(
-                        gateway=self, mac=blind_mac, device_type=device_type
+                        gateway=self,
+                        mac=blind_mac,
+                        device_type=device_type,
+                        blind_type=blind_type,
                     )
                 else:
                     _LOGGER.warning(
@@ -927,6 +943,20 @@ class MotionGateway(MotionCommunication):
         """
         return self._device_list
 
+    @property
+    def blind_type_list(self) -> dict[str, int]:
+        """
+        Return a dict containing all blinds connected to the gateway
+
+        The keys in the dict are the mac adresses of the blinds.
+        The values are the blind types
+        """
+        blind_type_list = {}
+        for mac, blind in self._device_list.items():
+            blind_type_list[mac] = blind.type.value
+
+        return blind_type_list
+
 
 class MotionBlind:
     """Sub class representing a blind connected to the Motion Gateway."""
@@ -939,11 +969,17 @@ class MotionBlind:
         mac: str = None,
         device_type: str = None,
         max_angle: int = 180,
+        blind_type: int | None = None,
     ):
         self._gateway = gateway
         self._mac = mac
         self._device_type = device_type
         self._blind_type = None
+        if blind_type is not None:
+            try:
+                self._blind_type = BlindType(blind_type)
+            except ValueError:
+                pass
         self._wireless_mode = None
         self._voltage_mode = None
         self._max_angle = max_angle
@@ -1571,8 +1607,9 @@ class MotionTopDownBottomUp(MotionBlind):
         mac: str = None,
         device_type: str = None,
         max_angle: int = 180,
+        blind_type: int | None = None,
     ):
-        super().__init__(gateway, mac, device_type, max_angle)
+        super().__init__(gateway, mac, device_type, max_angle, blind_type)
         self._position = {"T": 0, "B": 0, "C": 0}
         self._battery_voltage = {"T": None, "B": None}
         self._battery_level = {"T": None, "B": None}
