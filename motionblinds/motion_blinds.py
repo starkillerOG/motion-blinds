@@ -14,6 +14,7 @@ import datetime
 from enum import IntEnum
 from threading import Thread
 from Cryptodome.Cipher import AES
+from typing import Union
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -397,7 +398,7 @@ class MotionGateway(MotionCommunication):
         mcast_timeout: float = 5.0,
         multi_resp_timeout: float = 0.2,
         multicast: MotionMulticast = None,
-        blind_type_list: dict[str, int] | None = None,
+        blind_type_list: Union[dict[str, int], None] = None,
     ):
         self._ip = ip
         self._key = key
@@ -969,7 +970,7 @@ class MotionBlind:
         mac: str = None,
         device_type: str = None,
         max_angle: int = 180,
-        blind_type: int | None = None,
+        blind_type: Union[int, None] = None,
     ):
         self._gateway = gateway
         self._mac = mac
@@ -1607,7 +1608,7 @@ class MotionTopDownBottomUp(MotionBlind):
         mac: str = None,
         device_type: str = None,
         max_angle: int = 180,
-        blind_type: int | None = None,
+        blind_type: Union[int, None] = None,
     ):
         super().__init__(gateway, mac, device_type, max_angle, blind_type)
         self._position = {"T": 0, "B": 0, "C": 0}
