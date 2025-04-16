@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     name: Verify Python build context
     steps:
@@ -48,7 +48,7 @@ jobs:
   build:
     name: Build and publish PyPi package
     needs: verify
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.repository_owner == 'starkillerOG'
     steps:
     - uses: actions/checkout@v3
