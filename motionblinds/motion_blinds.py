@@ -75,6 +75,7 @@ class BlindType(IntEnum):
     DoubleRoller = 17
     VerticalBlindLeft = 21
     WoodShutter = 22
+    RadioReceiver = 24
     SkylightBlind = 26
     DualShade = 27
     VerticalBlind = 28
