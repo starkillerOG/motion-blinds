@@ -15,6 +15,7 @@ Shops that sell these blinds:
 ## Other brands of blinds
 This python library is primarly written for the Motion Blinds, but some other manufacturers use the same API and therefore this library also works with those brands.
 The following brands have been reported to also work with this python library:
+
 - [Motion Blinds](https://motionblinds.com/)
 - [Smart Blinds](https://www.smartblinds.nl/)
 - [Dooya](http://www.dooya.com/)
@@ -24,18 +25,24 @@ The following brands have been reported to also work with this python library:
 - [AMP Motorization](https://www.ampmotorization.com/)
 - [Bliss Automation - Alta Window Fashions](https://www.altawindowfashions.com/product/automation/bliss-automation/)
 - [3 Day Blinds](https://www.3dayblinds.com/)
+- [Decorquip Dream](https://www.decorquip.com/post.php?dream)
 - [Diaz](https://www.diaz.be/en/)
 - [Gaviota](https://www.gaviotagroup.com/en/)
 - [Havana Shade](https://havanashade.com/)
+- [Heicko](https://heicko.de/en/tubular-motors/controls/e-smart-home/usb-smart-home-stick-bi-direktional-1-st.html)
 - [Hurrican Shutters Wholesale](https://www.hurricaneshutterswholesale.com/)
 - [Inspired Shades](https://www.inspired-shades.com/)
 - [iSmartWindow](https://www.ismartwindow.co.nz/)
+- [Kaiser Nienhaus](https://www.kaiser-nienhaus.de/)
 - [Krispol](https://krispol.eu/en/drives/)
+- [Linx](https://linxautomation.com.au/)
 - [Madeco](https://www.madeco.fr/)
 - [Martec](https://www.martec.co.nz/)
 - [Raven Rock MFG](https://www.ravenrockmfg.com/)
 - [ScreenAway](https://www.screenaway.com.au/)
+- [Smart Rollo (SIRO)](https://smart-rollos.de/)
 - [Smart Home](https://www.smart-home.hu)
+- [Ublockout](https://www.ublockout.com/)
 - [Uprise Smart Shades](http://uprisesmartshades.com)
 
 ## Installation
