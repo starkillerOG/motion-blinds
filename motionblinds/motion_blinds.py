@@ -73,6 +73,7 @@ class BlindType(IntEnum):
     Curtain = 12
     CurtainLeft = 13
     CurtainRight = 14
+    RollerTiltMotor = 15
     DoubleRoller = 17
     VerticalBlindLeft = 21
     WoodShutter = 22
