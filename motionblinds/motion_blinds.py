@@ -28,6 +28,7 @@ DEVICE_TYPES_GATEWAY = ["02000001", "02000002"]  # Gateway
 DEVICE_TYPE_BLIND = "10000000"  # Standard Blind
 DEVICE_TYPE_TDBU = "10000001"  # Top Down Bottom Up
 DEVICE_TYPE_DR = "10000002"  # Double Roller
+DEVICE_TYPE_SUNBLIND = "10000011"
 
 DEVICE_TYPE_WIFI_CURTAIN = "22000000"  # Curtain direct WiFi
 DEVICE_TYPE_WIFI_BLIND = "22000002"  # Standard Blind direct WiFi
@@ -630,7 +631,7 @@ class MotionGateway(MotionCommunication):
             if device_type not in DEVICE_TYPES_GATEWAY:
                 blind_mac = blind["mac"]
                 blind_type = self._blind_type_list.get(blind_mac)
-                if device_type in [DEVICE_TYPE_BLIND]:
+                if device_type in [DEVICE_TYPE_BLIND, DEVICE_TYPE_SUNBLIND]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self,
                         mac=blind_mac,
