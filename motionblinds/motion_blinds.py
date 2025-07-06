@@ -994,7 +994,7 @@ class MotionBlind:
         self._status = None
         self._available = False
         self._limit_status = None
-        self._position = None
+        self._position = 1
         self._angle = None
         self._restore_angle = None
         self._battery_voltage = None
@@ -1266,7 +1266,7 @@ class MotionBlind:
                 )
                 return
 
-            self._position = response["data"].get("currentPosition", 1)
+            self._position = int(response["data"].get("currentPosition", 1))
             self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
             if self._angle != 0:
                 self._restore_angle = self._angle
@@ -1614,7 +1614,7 @@ class MotionTopDownBottomUp(MotionBlind):
         blind_type: Union[int, None] = None,
     ):
         super().__init__(gateway, mac, device_type, max_angle, blind_type)
-        self._position = {"T": 0, "B": 0, "C": 0}
+        self._position = {"T": 1, "B": 1, "C": 1}
         self._battery_voltage = {"T": None, "B": None}
         self._battery_level = {"T": None, "B": None}
 
@@ -1677,8 +1677,8 @@ class MotionTopDownBottomUp(MotionBlind):
                 }
 
             try:
-                pos_T = response["data"]["currentPosition_T"]
-                pos_B = response["data"]["currentPosition_B"]
+                pos_T = int(response["data"]["currentPosition_T"])
+                pos_B = int(response["data"]["currentPosition_B"])
             except KeyError:
                 _LOGGER.error(
                     "Device with mac '%s' send status that did not include the position of the TDBU.",
