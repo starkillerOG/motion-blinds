@@ -632,7 +632,13 @@ class MotionGateway(MotionCommunication):
             if device_type not in DEVICE_TYPES_GATEWAY:
                 blind_mac = blind["mac"]
                 blind_type = self._blind_type_list.get(blind_mac)
-                if device_type in [DEVICE_TYPE_BLIND, DEVICE_TYPE_SUNBLIND]:
+                if device_type in [
+                    DEVICE_TYPE_BLIND,
+                    DEVICE_TYPE_WIFI_BLIND,
+                    DEVICE_TYPE_WIFI_CURTAIN,
+                    DEVICE_TYPE_WIFI_GATE,
+                    DEVICE_TYPE_SUNBLIND,
+                ]:
                     self._device_list[blind_mac] = MotionBlind(
                         gateway=self,
                         mac=blind_mac,
@@ -649,17 +655,6 @@ class MotionGateway(MotionCommunication):
                     )
                 elif device_type in [DEVICE_TYPE_TDBU]:
                     self._device_list[blind_mac] = MotionTopDownBottomUp(
-                        gateway=self,
-                        mac=blind_mac,
-                        device_type=device_type,
-                        blind_type=blind_type,
-                    )
-                elif device_type in [
-                    DEVICE_TYPE_WIFI_BLIND,
-                    DEVICE_TYPE_WIFI_CURTAIN,
-                    DEVICE_TYPE_WIFI_GATE,
-                ]:
-                    self._device_list[blind_mac] = MotionBlind(
                         gateway=self,
                         mac=blind_mac,
                         device_type=device_type,
@@ -1121,6 +1116,7 @@ class MotionBlind:
             DEVICE_TYPE_WIFI_BLIND,
             DEVICE_TYPE_WIFI_CURTAIN,
             DEVICE_TYPE_WIFI_GATE,
+            DEVICE_TYPE_SUNBLIND,
         ]:
             _LOGGER.warning(
                 "Device with mac '%s' has DeviceType '%s' that does not correspond to a known blind in Update function.",
