@@ -591,9 +591,9 @@ class MotionGateway(MotionCommunication):
         if data:
             try:
                 self._status = GatewayStatus(
-                    data.get("currentState", GatewayStatus.Unknown)
+                    int(data.get("currentState", GatewayStatus.Unknown))
                 )
-            except ValueError:
+            except (ValueError, TypeError):
                 self._status = GatewayStatus.Unknown
                 _LOGGER.debug("Gateway returned unknown GatewayStatus %s", data.get("currentState"))
             self._N_devices = data.get("numberOfDevices", 0)
@@ -1132,7 +1132,7 @@ class MotionBlind:
         self._mac = response.get("mac", self._mac)
         self._device_type = device_type
         try:
-            self._blind_type = BlindType(response["data"]["type"])
+            self._blind_type = BlindType(int(response["data"]["type"]))
         except KeyError:
             if self._blind_type is None:
                 _LOGGER.info(
@@ -1140,7 +1140,7 @@ class MotionBlind:
                     self.mac,
                 )
                 self._blind_type = BlindType.RollerBlind
-        except ValueError:
+        except (ValueError, TypeError):
             if self._blind_type != BlindType.Unknown:
                 _LOGGER.error(
                     "Device with mac '%s' has blind_type '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1150,10 +1150,10 @@ class MotionBlind:
             self._blind_type = BlindType.Unknown
 
         try:
-            self._wireless_mode = WirelessMode(response["data"]["wirelessMode"])
+            self._wireless_mode = WirelessMode(int(response["data"]["wirelessMode"]))
         except KeyError:
             pass
-        except ValueError:
+        except (ValueError, TypeError):
             if self._wireless_mode != WirelessMode.Unknown:
                 _LOGGER.error(
                     "Device with mac '%s' has wireless_mode '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1163,10 +1163,10 @@ class MotionBlind:
             self._wireless_mode = WirelessMode.Unknown
 
         try:
-            self._voltage_mode = VoltageMode(response["data"]["voltageMode"])
+            self._voltage_mode = VoltageMode(int(response["data"]["voltageMode"]))
         except KeyError:
             pass
-        except ValueError:
+        except (ValueError, TypeError):
             if self._voltage_mode != VoltageMode.Unknown:
                 _LOGGER.error(
                     "Device with mac '%s' has voltage_mode '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1185,12 +1185,12 @@ class MotionBlind:
             return True
 
         try:
-            self._RSSI = response["data"]["RSSI"]
+            self._RSSI = int(response["data"]["RSSI"])
         except KeyError:
             pass
 
         try:
-            self._is_charging = response["data"]["chargingState"]
+            self._is_charging = int(response["data"]["chargingState"])
         except KeyError:
             pass
 
@@ -1205,10 +1205,10 @@ class MotionBlind:
 
             # handle specific properties
             try:
-                self._status = BlindStatus(response["data"]["operation"])
+                self._status = BlindStatus(int(response["data"]["operation"]))
             except KeyError:
                 self._status = BlindStatus.Unknown
-            except ValueError:
+            except (ValueError, TypeError):
                 if self._status != BlindStatus.Unknown:
                     _LOGGER.error(
                         "Device with mac '%s' has status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1221,10 +1221,10 @@ class MotionBlind:
                 return
 
             try:
-                self._limit_status = LimitStatus(response["data"]["currentState"])
+                self._limit_status = LimitStatus(int(response["data"]["currentState"]))
             except KeyError:
                 self._limit_status = LimitStatus.Unknown
-            except ValueError:
+            except (ValueError, TypeError):
                 if self._limit_status != LimitStatus.Unknown:
                     _LOGGER.error(
                         "Device with mac '%s' has limit_status '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1234,7 +1234,7 @@ class MotionBlind:
                 self._status = LimitStatus.Unknown
 
             try:
-                self._battery_voltage = response["data"]["batteryLevel"] / 100.0
+                self._battery_voltage = int(response["data"]["batteryLevel"]) / 100.0
             except KeyError:
                 self._battery_voltage = None
             else:
@@ -1267,10 +1267,10 @@ class MotionBlind:
                 return
 
             self._position = int(response["data"].get("currentPosition", 1))
-            self._angle = response["data"].get("currentAngle", 0) * (180.0 / self._max_angle)
+            self._angle = int(response["data"].get("currentAngle", 0)) * (180.0 / self._max_angle)
             if self._angle != 0:
                 self._restore_angle = self._angle
-        except (KeyError, ValueError) as ex:
+        except (KeyError, ValueError, TypeError) as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
@@ -1635,12 +1635,12 @@ class MotionTopDownBottomUp(MotionBlind):
             # handle specific properties
             try:
                 self._status = {
-                    "T": BlindStatus(response["data"]["operation_T"]),
-                    "B": BlindStatus(response["data"]["operation_B"]),
+                    "T": BlindStatus(int(response["data"]["operation_T"])),
+                    "B": BlindStatus(int(response["data"]["operation_B"])),
                 }
             except KeyError:
                 self._status = {"T": BlindStatus.Unknown, "B": BlindStatus.Unknown}
-            except ValueError:
+            except (ValueError, TypeError):
                 if self._status != {"T": BlindStatus.Unknown, "B": BlindStatus.Unknown}:
                     _LOGGER.error(
                         "Device with mac '%s' has status T: '%s', B: '%s' that is not yet known, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues.",
@@ -1652,15 +1652,15 @@ class MotionTopDownBottomUp(MotionBlind):
 
             try:
                 self._limit_status = {
-                    "T": LimitStatus(response["data"]["currentState_T"]),
-                    "B": LimitStatus(response["data"]["currentState_B"]),
+                    "T": LimitStatus(int(response["data"]["currentState_T"])),
+                    "B": LimitStatus(int(response["data"]["currentState_B"])),
                 }
             except KeyError:
                 self._limit_status = {
                     "T": LimitStatus.Unknown,
                     "B": LimitStatus.Unknown,
                 }
-            except ValueError:
+            except (ValueError, TypeError):
                 if self._limit_status != {
                     "T": LimitStatus.Unknown,
                     "B": LimitStatus.Unknown,
@@ -1717,7 +1717,7 @@ class MotionTopDownBottomUp(MotionBlind):
                         response["data"]["batteryLevel_B"],
                     )
 
-        except (KeyError, ValueError) as ex:
+        except (KeyError, ValueError, TypeError) as ex:
             _LOGGER.exception(
                 "Device with mac '%s' send an response with unexpected data, please submit an issue at https://github.com/starkillerOG/motion-blinds/issues. Response: '%s'",
                 self.mac,
