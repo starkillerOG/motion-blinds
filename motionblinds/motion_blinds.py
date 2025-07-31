@@ -989,7 +989,7 @@ class MotionBlind:
         self._status = None
         self._available = False
         self._limit_status = None
-        self._position = 1
+        self._position = None
         self._angle = None
         self._restore_angle = None
         self._battery_voltage = None
