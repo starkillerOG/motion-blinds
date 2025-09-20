@@ -5,6 +5,7 @@ This library allows you to control Motion Blinds from Coulisse B.V.
 This library is primarly writen to be used with HomeAssistant but can also be used stand alone.
 
 [![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/starkillerOG)
+<a href="https://www.buymeacoffee.com/starkillerog"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me a Coffee" height="21"></a>
 
 For products see https://motion-blinds.com or https://coulisse.com/products/motion.
 
