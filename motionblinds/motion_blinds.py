@@ -706,6 +706,21 @@ class MotionGateway(MotionCommunication):
                     log_hide(message),
                 )
                 return
+            # Gateways rotate their token periodically and broadcast the new
+            # value in Heartbeat messages. If we don't pick it up here, the
+            # cached AccessToken goes stale and subsequent WriteDevice
+            # commands are silently dropped by the gateway (it returns a
+            # WriteDeviceAck with the device's current state but does not
+            # actually forward the command to the motor). Mirror the token
+            # refresh logic from _parse_device_list_response.
+            new_token = message.get("token")
+            if new_token is not None:
+                if self._token is not None and self._token != new_token:
+                    _LOGGER.info("Gateway token has changed (via Heartbeat).")
+                    self._access_token = None
+                self._token = new_token
+                if self._access_token is None and self._key is not None:
+                    self._get_access_token()
             self._parse_update_response(message)
             for callback in self._registered_callbacks.values():
                 callback()
