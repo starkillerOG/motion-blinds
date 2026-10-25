@@ -162,7 +162,7 @@ class MotionCommunication:
     @staticmethod
     def _create_mcast_socket(interface, bind_interface, blocking=True):
         """Create and bind a socket for communication."""
-        # Host IP adress is recommended as interface.
+        # Host IP address is recommended as interface.
         if interface == "any":
             ip32bit = socket.INADDR_ANY
             bind_interface = False
@@ -336,7 +336,7 @@ class MotionMulticast(MotionCommunication):
         """Register a Motion Gateway to this Multicast listener."""
         if ip in self._registered_callbacks:
             _LOGGER.error(
-                "A callback for ip '%s' was already registed, overwriting previous callback",
+                "A callback for ip '%s' was already registered, overwriting previous callback",
                 ip,
             )
         self._registered_callbacks[ip] = callback
@@ -823,7 +823,7 @@ class MotionGateway(MotionCommunication):
         for blind in self.device_list.values():
             blind.Update_trigger()
 
-        # Wait untill callback received
+        # Wait until callback received
         start = datetime.datetime.utcnow()
         while True:
             if self._received_multicast_msg:
@@ -841,7 +841,7 @@ class MotionGateway(MotionCommunication):
         """Register a external callback function for updates of the gateway."""
         if cb_id in self._registered_callbacks:
             _LOGGER.error(
-                "A callback with id '%s' was already registed, overwriting previous callback",
+                "A callback with id '%s' was already registered, overwriting previous callback",
                 cb_id,
             )
         self._registered_callbacks[cb_id] = callback
@@ -938,7 +938,7 @@ class MotionGateway(MotionCommunication):
         """
         Return a dict containing all blinds connected to the gateway.
 
-        The keys in the dict are the mac adresses of the blinds.
+        The keys in the dict are the mac addresses of the blinds.
         """
         return self._device_list
 
@@ -947,7 +947,7 @@ class MotionGateway(MotionCommunication):
         """
         Return a dict containing all blinds connected to the gateway
 
-        The keys in the dict are the mac adresses of the blinds.
+        The keys in the dict are the mac addresses of the blinds.
         The values are the blind types
         """
         blind_type_list = {}
@@ -1028,7 +1028,7 @@ class MotionBlind:
         return response
 
     def _wait_on_mcast_report(self, mcast_socket):
-        """Wait untill a status report is received from the multicast socket"""
+        """Wait until a status report is received from the multicast socket"""
         while True:
             try:
                 mcast_data, (ip, _) = mcast_socket.recvfrom(SOCKET_BUFSIZE)
@@ -1474,7 +1474,7 @@ class MotionBlind:
         """Register a external callback function for updates of this blind."""
         if cb_id in self._registered_callbacks:
             _LOGGER.error(
-                "A callback with id '%s' was already registed, overwriting previous callback",
+                "A callback with id '%s' was already registered, overwriting previous callback",
                 cb_id,
             )
         self._registered_callbacks[cb_id] = callback

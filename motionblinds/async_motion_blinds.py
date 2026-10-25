@@ -51,7 +51,7 @@ class AsyncMotionMulticast(MotionCommunication):
         """Register a Motion Gateway to this Multicast listener."""
         if ip in self.registered_callbacks:
             _LOGGER.error(
-                "A callback for ip '%s' was already registed, overwriting previous callback",
+                "A callback for ip '%s' was already registered, overwriting previous callback",
                 ip,
             )
         self.registered_callbacks[ip] = callback
