@@ -86,6 +86,7 @@ class BlindType(IntEnum):
     Switch = 43
     InsectScreen = 44
     TriangleBlind = 57
+    PlantationShutter = 60
 
 
 class BlindStatus(IntEnum):
