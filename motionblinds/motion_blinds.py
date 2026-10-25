@@ -599,6 +599,15 @@ class MotionGateway(MotionCommunication):
             self._N_devices = data.get("numberOfDevices", 0)
             self._RSSI = data.get("RSSI")
 
+        # check for updated token
+        new_token = response.get("token")
+        if new_token is not None and self._token != new_token:
+            if self._token is not None:
+                _LOGGER.info("Gateway token has changed.")
+            self._token = new_token
+            if self._key is not None:
+                self._get_access_token()
+
     def _parse_device_list_response(self, response):
         """Parse the response to a device list update of the gateway"""
 
