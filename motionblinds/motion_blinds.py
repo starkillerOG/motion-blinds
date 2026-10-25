@@ -421,6 +421,7 @@ class MotionGateway(MotionCommunication):
         self._device_type = None
         self._status = None
         self._available = False
+        self._unavailable_logged = False
         self._N_devices = None
         self._RSSI = None
         self._protocol_version = None
@@ -459,6 +460,13 @@ class MotionGateway(MotionCommunication):
         self._access_token = encrypted_bytes.hex().upper()
 
         return self._access_token
+
+    def _set_available(self):
+        """Mark the gateway as available and log if it was unavailable before."""
+        if self._unavailable_logged:
+            _LOGGER.info("Motion gateway %s is available again", self._ip)
+            self._unavailable_logged = False
+        self._available = True
 
     def _send(self, message, single_response=True):
         """Send a command to the Motion Gateway."""
@@ -503,12 +511,22 @@ class MotionGateway(MotionCommunication):
                     break
 
                 if attempt >= 3:
-                    _LOGGER.error(
-                        "Timeout of %.1f sec occurred on %i attempts while sending message '%s'",
-                        self._timeout,
-                        attempt,
-                        log_hide(message),
-                    )
+                    if self._available:
+                        _LOGGER.warning(
+                            "Motion gateway %s became unavailable, timeout of %.1f sec occurred on %i attempts while sending message '%s'",
+                            self._ip,
+                            self._timeout,
+                            attempt,
+                            log_hide(message),
+                        )
+                        self._unavailable_logged = True
+                    else:
+                        _LOGGER.debug(
+                            "Timeout of %.1f sec occurred on %i attempts while sending message '%s'",
+                            self._timeout,
+                            attempt,
+                            log_hide(message),
+                        )
                     s.close()
                     self._available = False
                     raise
@@ -587,7 +605,7 @@ class MotionGateway(MotionCommunication):
         # update variables
         self._gateway_mac = response["mac"]
         self._device_type = device_type
-        self._available = True
+        self._set_available()
         data = response.get("data")
         if data:
             try:
@@ -631,7 +649,7 @@ class MotionGateway(MotionCommunication):
         self._protocol_version = response["ProtocolVersion"]
         self._firmware_version = response.get("fwVersion")
         self._token = response["token"]
-        self._available = True
+        self._set_available()
 
         # calculate the acces token
         self._get_access_token()
@@ -998,6 +1016,7 @@ class MotionBlind:
 
         self._status = None
         self._available = False
+        self._unavailable_logged = False
         self._limit_status = None
         self._position = None
         self._angle = None
@@ -1109,6 +1128,13 @@ class MotionBlind:
 
         return 200.0
 
+    def _set_available(self):
+        """Mark the blind as available and log if it was unavailable before."""
+        if self._unavailable_logged:
+            _LOGGER.info("Motion blind %s is available again", self._mac)
+            self._unavailable_logged = False
+        self._available = True
+
     def _parse_response_common(self, response):
         """Parse the common part of a response form the blind."""
 
@@ -1185,7 +1211,7 @@ class MotionBlind:
         if self._blind_type in [BlindType.ShangriLaBlind]:
             self._max_angle = 90
 
-        self._available = True
+        self._set_available()
 
         if self._wireless_mode == WirelessMode.UniDirection:
             return True
@@ -1369,11 +1395,20 @@ class MotionBlind:
                 break
             except socket.timeout:
                 if attempt >= 5:
-                    _LOGGER.error(
-                        "Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.",
-                        self._gateway._mcast_timeout,
-                        attempt,
-                    )
+                    if self._available:
+                        _LOGGER.warning(
+                            "Motion blind %s became unavailable, timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.",
+                            self._mac,
+                            self._gateway._mcast_timeout,
+                            attempt,
+                        )
+                        self._unavailable_logged = True
+                    else:
+                        _LOGGER.debug(
+                            "Timeout of %.1f sec occurred on %i attempts while waiting on multicast push from update request, communication between gateway and blind might be bad.",
+                            self._gateway._mcast_timeout,
+                            attempt,
+                        )
                     self._available = False
                     raise
                 _LOGGER.debug(
