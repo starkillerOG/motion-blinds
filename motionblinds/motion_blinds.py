@@ -1087,17 +1087,20 @@ class MotionBlind:
     def _calculate_battery_level(voltage):
         if 0.0 < voltage <= 9.4:
             # 2 cel battery pack (8.4V)
-            return round((voltage - 6.2) * 100 / (8.4 - 6.2), 0)
+            level = round((voltage - 6.2) * 100 / (8.4 - 6.2), 0)
+            return max(0.0, min(100.0, level))
 
         if 9.4 < voltage <= 13.6:
             # 3 cel battery pack (12.6V)
             # Motion Blinds specs: 10.4-12.6V
             # Tested: 10.27-12.34V
-            return round((voltage - 10.27) * 100 / (12.34 - 10.27), 0)
+            level = round((voltage - 10.27) * 100 / (12.34 - 10.27), 0)
+            return max(0.0, min(100.0, level))
 
         if 13.6 < voltage <= 19.0:
             # 4 cel battery pack (16.8V)
-            return round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
+            level = round((voltage - 14.6) * 100 / (16.8 - 14.6), 0)
+            return max(0.0, min(100.0, level))
 
         if voltage >= 100.0:
             # AC motor
