@@ -478,21 +478,22 @@ class MotionGateway(MotionCommunication):
                     single_data, _addr = s.recvfrom(SOCKET_BUFSIZE)
                     data.append(single_data)
 
-                    if len(single_data) < int(0.9 * MAX_RESPONSE_LENGTH):
-                        break
-
-                    s.settimeout(self._multi_resp_timeout)
-
                     if single_response:
-                        _LOGGER.error(
-                            "Response of length %i>%i received, while only expecting single response,"
-                            " while sending message '%s', got response: '%s'",
-                            len(single_data),
-                            int(0.9 * MAX_RESPONSE_LENGTH),
-                            log_hide(message),
-                            log_hide(json.loads(single_data)),
-                        )
+                        if len(single_data) >= int(0.9 * MAX_RESPONSE_LENGTH):
+                            _LOGGER.error(
+                                "Response of length %i>%i received, while only expecting single response,"
+                                " while sending message '%s', got response: '%s'",
+                                len(single_data),
+                                int(0.9 * MAX_RESPONSE_LENGTH),
+                                log_hide(message),
+                                log_hide(json.loads(single_data)),
+                            )
                         break
+
+                    # Multi-packet responses (e.g. GetDeviceList with many
+                    # devices) span several datagrams; keep reading until
+                    # the socket times out.
+                    s.settimeout(self._multi_resp_timeout)
 
                 s.close()
                 break
