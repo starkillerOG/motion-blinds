@@ -32,7 +32,7 @@ The following brands have been reported to also work with this python library:
 - [Gaviota](https://www.gaviotagroup.com/en/)
 - [Havana Shade](https://havanashade.com/)
 - [Heicko](https://heicko.de/en/tubular-motors/controls/e-smart-home/usb-smart-home-stick-bi-direktional-1-st.html)
-- [Hurrican Shutters Wholesale](https://www.hurricaneshutterswholesale.com/)
+- [Hurricane Shutters Wholesale](https://www.hurricaneshutterswholesale.com/)
 - [Inspired Shades](https://www.inspired-shades.com/)
 - [iSmartWindow](https://www.ismartwindow.co.nz/)
 - [Kaiser Nienhaus](https://www.kaiser-nienhaus.de/)
