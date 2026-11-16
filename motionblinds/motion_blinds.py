@@ -468,7 +468,7 @@ class MotionGateway(MotionCommunication):
             self._unavailable_logged = False
         self._available = True
 
-    def _send(self, message, single_response=True):
+    def _send(self, message, single_response=True, max_attempts=3):
         """Send a command to the Motion Gateway."""
         attempt = 1
         data = []
@@ -510,7 +510,7 @@ class MotionGateway(MotionCommunication):
                     s.close()
                     break
 
-                if attempt >= 3:
+                if attempt >= max_attempts:
                     if self._available:
                         _LOGGER.warning(
                             "Motion gateway %s became unavailable, timeout of %.1f sec occurred on %i attempts while sending message '%s'",
@@ -578,7 +578,7 @@ class MotionGateway(MotionCommunication):
 
         return self._send(msg)
 
-    def _write_subdevice(self, mac, device_type, data):
+    def _write_subdevice(self, mac, device_type, data, max_attempts=3):
         """Write a command to a subdevice."""
         msg = {
             "msgType": "WriteDevice",
@@ -589,7 +589,7 @@ class MotionGateway(MotionCommunication):
             "data": data,
         }
 
-        return self._send(msg)
+        return self._send(msg, max_attempts=max_attempts)
 
     def _parse_update_response(self, response):
         """Parse the response to a update of the gateway"""
@@ -1041,10 +1041,12 @@ class MotionBlind:
             f"limit: {self.limit_status}, battery: {self.voltage_name}, {self.battery_level} %, {self.battery_voltage} V, charging: {self.is_charging}, RSSI: {self.RSSI} dBm, com: {self.wireless_name}>"
         )
 
-    def _write(self, data):
+    def _write(self, data, max_attempts=3):
         """Write a command to control the blind."""
 
-        response = self._gateway._write_subdevice(self.mac, self._device_type, data)
+        response = self._gateway._write_subdevice(
+            self.mac, self._device_type, data, max_attempts=max_attempts
+        )
 
         # check msgType
         msgType = response.get("msgType")
@@ -1425,6 +1427,15 @@ class MotionBlind:
         response = self._write(data)
 
         self._parse_response(response)
+
+    def Cycle(self):
+        """Send one push-button impulse to a direct-WiFi garage gate."""
+        if self._device_type != DEVICE_TYPE_WIFI_GATE:
+            raise ValueError("Cycle is only supported by a direct-WiFi garage gate")
+
+        response = self._write({"operation": 3}, max_attempts=1)
+        if response.get("actionResult") is not None:
+            raise ParseException("Garage gate rejected the cycle command")
 
     def Open(self):
         """Open the blind/move the blind up."""
